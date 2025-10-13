@@ -1,29 +1,59 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+// primeiro/app/_layout.tsx
+import {Stack, useRouter, useSegments} from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import {useCallback, useEffect, useState} from "react";
+import {View} from "react-native";
+import {AuthProvider, useAuth} from "../context/AuthContext";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+// Mantém a tela de splash visível enquanto fazemos as checagens
+SplashScreen.preventAutoHideAsync();
+
+const InitialLayout = () => {
+	const {user} = useAuth();
+	const segments = useSegments();
+	const router = useRouter();
+	const [appReady, setAppReady] = useState(false);
+
+	useEffect(() => {
+		const inAuthGroup = segments[0] === "(auth)";
+
+		if (user === null || user) {
+			// Se o status do usuário (logado ou não) já foi determinado,
+			// podemos considerar o app pronto para a lógica de navegação.
+			setAppReady(true);
+		}
+
+		if (!appReady) return;
+
+		if (user && inAuthGroup) {
+			router.replace("/(app)");
+		} else if (!user && !inAuthGroup) {
+			router.replace("/(auth)/login");
+		}
+	}, [user, segments, appReady]);
+
+	// Esta função esconde a tela de splash APENAS quando o layout raiz for renderizado
+	const onLayoutRootView = useCallback(async () => {
+		if (appReady) {
+			await SplashScreen.hideAsync();
+		}
+	}, [appReady]);
+
+	if (!appReady) {
+		return null; // ou um componente de loading <ActivityIndicator />
+	}
+
+	return (
+		<View style={{flex: 1}} onLayout={onLayoutRootView}>
+			<Stack screenOptions={{headerShown: false}} />
+		</View>
+	);
+};
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
-
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+	return (
+		<AuthProvider>
+			<InitialLayout />
+		</AuthProvider>
+	);
 }

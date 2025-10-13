@@ -1,39 +1,64 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+
+### ATENCAO! Renomeie este arquivo para .gitignore e coloque sem seu repositorio do projeto
+
+
+
+# Nodejs 
+# Ignora a pasta de dependências do Nodejs, que pode ser recriada 
+# com 'npm install'
 node_modules/
 
 # Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
+# Ignora os arquivos de cache e configurações específicas do Expo
+expo/
+*expo/
+expo-shared/
 
 # Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+*orig*
+*jks
+*p8
+*p12
+*key
+*mobileprovision
 
 # Metro
-.metro-health-check*
+metro-health-check*
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Logs
+# Ignora arquivos de log gerados por erros do npm ou yarn
+npm-debuglog*
+yarn-debuglog*
+yarn-errorlog*
+
+# Arquivos gerados pelo sistema operacional
+# Ignora arquivos como DS_Store (macOS) e Thumbsdb (Windows)
+DS_Store
+Thumbsdb
+
+# Arquivos gerados pelo ambiente de desenvolvimento
+# Ignora configurações específicas de IDEs como VSCode e IntelliJ
+vscode/
+idea/
+
+# Arquivos Build/Dist
+# Ignora pastas de build ou distribuição
+build/
+dist/
+web-build/
+
+# Arquivos temporarios
+*tmp
+*swp
+node_modules
 
 # macOS
-.DS_Store
-*.pem
+DS_Store
+*pem
 
 # local env files
-.env*.local
+env*local
 
 # typescript
-*.tsbuildinfo
-
-app-example
+*tsbuildinfo
