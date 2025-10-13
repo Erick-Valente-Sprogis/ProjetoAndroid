@@ -39,8 +39,8 @@ Thumbsdb
 
 # Arquivos gerados pelo ambiente de desenvolvimento
 # Ignora configurações específicas de IDEs como VSCode e IntelliJ
-vscode/
-idea/
+.vscode/
+.idea/
 
 # Arquivos Build/Dist
 # Ignora pastas de build ou distribuição
