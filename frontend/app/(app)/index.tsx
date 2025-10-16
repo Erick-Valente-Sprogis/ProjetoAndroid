@@ -32,8 +32,20 @@ export default function ProfileScreen() {
 	const showToken = async () => {
 		const user = auth.currentUser;
 		if (user) {
-			const token = await user.getIdToken();
-			console.log(token); // O token aparecerá no console do Metro
+			try {
+				// O 'true' força a obtenção de um token novo e fresco do Firebase
+				const token = await user.getIdToken(true);
+
+				await Clipboard.setStringAsync(token);
+				Alert.alert(
+					"Token ATUALIZADO e Copiado!",
+					"Um novo token foi copiado para a área de transferência."
+				);
+			} catch (error) {
+				// Agora estamos usando a variável 'error'
+				console.error("Erro ao obter token:", error);
+				Alert.alert("Erro", "Não foi possível obter o token.");
+			}
 		}
 	};
 

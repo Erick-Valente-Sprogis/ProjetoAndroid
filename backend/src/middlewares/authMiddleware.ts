@@ -1,18 +1,21 @@
 import {Request, Response, NextFunction} from "express";
+import {PrismaClient} from "@prisma/client";
 import admin from "firebase-admin";
 import path from "path";
 
-// Carrega as credenciais e inicializa o Firebase Admin
-const serviceAccount = require(path.join(
-	__dirname,
-	"../../../serviceAccountKey.json"
-));
+const prisma = new PrismaClient();
 
-admin.initializeApp({
-	credential: admin.credential.cert(serviceAccount),
-});
+if (!admin.apps.length) {
+	const serviceAccount = require(path.join(
+		__dirname,
+		"../../../serviceAccountKey.json"
+	));
 
-// Estendendo a interface Request do Express para incluir nossa propriedade 'user'
+	admin.initializeApp({
+		credential: admin.credential.cert(serviceAccount),
+	});
+}
+
 declare global {
 	namespace Express {
 		interface Request {
@@ -36,18 +39,52 @@ export const authMiddleware = async (
 
 	const token = authorization.split("Bearer ")[1];
 
+	// ===== ADICIONANDO A VERIFICAÇÃO AQUI =====
 	if (!token) {
-		return res
-			.status(401)
-			.send({message: "Acesso não autorizado. Token não fornecido."});
+		return res.status(401).send({message: "Formato do token inválido."});
 	}
+	// ===========================================
 
 	try {
+		// Agora o TypeScript sabe que 'token' é uma string
 		const decodedToken = await admin.auth().verifyIdToken(token);
-		req.user = decodedToken; // Adiciona os dados do usuário à requisição
-		next(); // Continua para a próxima função (a lógica da rota)
+		req.user = decodedToken;
+		next();
 	} catch (error) {
 		console.error("Erro ao verificar token:", error);
 		return res.status(403).send({message: "Token inválido ou expirado."});
+	}
+};
+
+export const adminMiddleware = async (
+	req: Request,
+	res: Response,
+	next: NextFunction
+) => {
+	// ... (seu código do adminMiddleware continua aqui, sem alterações)
+	const uid = req.user?.uid;
+
+	if (!uid) {
+		return res
+			.status(403)
+			.send({message: "Acesso negado. UID não encontrado."});
+	}
+
+	try {
+		const userProfile = await prisma.user.findUnique({
+			where: {uid: uid},
+		});
+
+		if (!userProfile || userProfile.role !== "admin") {
+			return res
+				.status(403)
+				.send({message: "Acesso negado. Requer permissão de administrador."});
+		}
+
+		next();
+	} catch (error) {
+		return res
+			.status(500)
+			.send({message: "Erro ao verificar permissões de usuário."});
 	}
 };
