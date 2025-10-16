@@ -1,88 +1,106 @@
-// Cole este código completo em: frontend/app/(app)/index.tsx
-
 import {signOut} from "firebase/auth";
 import React, {useState, useEffect} from "react";
-import {Alert, Button, StyleSheet, Switch, Text, View} from "react-native";
-import {setStringAsync} from "expo-clipboard";
+import {useRouter} from "expo-router";
+import {
+	Alert,
+	Button,
+	StyleSheet,
+	Text,
+	View,
+	FlatList,
+	ActivityIndicator,
+} from "react-native";
 import {auth} from "../../firebaseConfig";
+import api from "../../src/services/api"; // Importando nosso cliente de API
 
-export default function ProfileScreen() {
-	const [isMfaEnabled, setIsMfaEnabled] = useState(false);
-	// --- NOVO ESTADO PARA A NOTIFICAÇÃO ---
-	const [notification, setNotification] = useState("");
+// Definindo um tipo para nossas Notas Fiscais para usar com TypeScript
+type NotaFiscal = {
+	id: string;
+	numero_nf: string;
+	valor_total: number;
+	emitente_nome: string;
+};
+
+type UserProfile = {
+	id: string;
+	uid: string;
+	email: string;
+	fullName: string;
+	role: "user" | "admin";
+	// ... outros campos
+};
+
+export default function DashboardScreen() {
 	const user = auth.currentUser;
+	const [notas, setNotas] = useState<NotaFiscal[]>([]);
+	const [loading, setLoading] = useState(true);
 
-	// Efeito para limpar a notificação após alguns segundos
-	useEffect(() => {
-		if (notification) {
-			const timer = setTimeout(() => {
-				setNotification("");
-			}, 3000); // A notificação some após 3 segundos
-			return () => clearTimeout(timer);
+	const fetchNotas = async () => {
+		if (!user) return;
+		setLoading(true);
+		try {
+			// Pega o token de autenticação do usuário logado
+			const token = await user.getIdToken();
+
+			// Faz a chamada para a API, enviando o token no cabeçalho
+			const response = await api.get("/notas", {
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+
+			// Atualiza o estado com as notas recebidas do backend
+			setNotas(response.data);
+		} catch (error) {
+			console.error("Erro ao buscar notas:", error);
+			Alert.alert("Erro", "Não foi possível buscar as notas fiscais.");
+		} finally {
+			setLoading(false);
 		}
-	}, [notification]);
+	};
+
+	// useEffect para chamar a função fetchNotas assim que a tela for montada
+	useEffect(() => {
+		fetchNotas();
+	}, [user]); // Roda a função sempre que o objeto 'user' mudar
 
 	const handleLogout = () => {
 		signOut(auth);
 	};
-	const handleToggleMfa = () => {
-		/* ... sua função MFA ... */
-	};
-
-	const showToken = async () => {
-		const user = auth.currentUser;
-		if (user) {
-			try {
-				const token = await user.getIdToken(true);
-				await setStringAsync(token);
-
-				// --- EM VEZ DE ALERT, USAMOS O NOSSO ESTADO DE NOTIFICAÇÃO ---
-				setNotification("Token copiado para a área de transferência!");
-			} catch (error) {
-				console.error("Erro ao obter ou copiar token:", error);
-				setNotification("Erro ao copiar o token.");
-			}
-		}
-	};
 
 	return (
 		<View style={styles.container}>
-			<Text style={styles.title}>Meu Perfil</Text>
-			{/* ... resto do seu JSX de perfil ... */}
+			<Text style={styles.title}>Dashboard de Notas</Text>
 			<Text style={styles.emailText}>
 				{user ? user.email : "Carregando..."}
 			</Text>
 
-			<View style={styles.section}>
-				<Text style={styles.sectionTitle}>Configurações de Conta</Text>
-
-				<View style={styles.settingRow}>
-					<Text>Autenticação de Dois Fatores (MFA)</Text>
-					<Switch
-						trackColor={{false: "#767577", true: "#81b0ff"}}
-						thumbColor={isMfaEnabled ? "#007BFF" : "#f4f3f4"}
-						onValueChange={handleToggleMfa}
-						value={isMfaEnabled}
-					/>
-				</View>
-
-				<Button title="Mostrar Token" onPress={showToken} />
-				<Button
-					title="Editar Perfil"
-					onPress={() => Alert.alert("A Fazer", "Tela de edição de perfil.")}
+			{loading ? (
+				<ActivityIndicator size="large" color="#007BFF" />
+			) : (
+				<FlatList
+					data={notas}
+					keyExtractor={(item) => item.id}
+					renderItem={({item}) => (
+						<View style={styles.notaItem}>
+							<Text style={styles.notaNumero}>{item.numero_nf}</Text>
+							<Text>{item.emitente_nome}</Text>
+							<Text style={styles.notaValor}>
+								R$ {item.valor_total.toFixed(2)}
+							</Text>
+						</View>
+					)}
+					ListEmptyComponent={
+						<Text style={styles.emptyText}>
+							Nenhuma nota fiscal encontrada.
+						</Text>
+					}
 				/>
-			</View>
+			)}
 
 			<View style={styles.logoutButton}>
 				<Button title="Sair (Logout)" color="#d9534f" onPress={handleLogout} />
 			</View>
-
-			{/* --- NOSSO COMPONENTE DE NOTIFICAÇÃO --- */}
-			{notification ? (
-				<View style={styles.notificationContainer}>
-					<Text style={styles.notificationText}>{notification}</Text>
-				</View>
-			) : null}
 		</View>
 	);
 }
@@ -99,38 +117,30 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		textAlign: "center",
 		color: "gray",
-		marginBottom: 30,
+		marginBottom: 20,
 	},
-	section: {marginBottom: 30},
-	sectionTitle: {
-		fontSize: 20,
-		fontWeight: "bold",
-		marginBottom: 15,
-		borderBottomWidth: 1,
-		borderBottomColor: "#ddd",
-		paddingBottom: 5,
-	},
-	settingRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		paddingVertical: 15,
-	},
-	logoutButton: {marginTop: "auto", paddingBottom: 20},
-
-	// --- NOVOS ESTILOS PARA A NOTIFICAÇÃO ---
-	notificationContainer: {
-		position: "absolute",
-		bottom: 50,
-		left: 20,
-		right: 20,
-		backgroundColor: "#333",
-		borderRadius: 8,
+	logoutButton: {paddingTop: 20},
+	emptyText: {textAlign: "center", marginTop: 50, color: "gray"},
+	notaItem: {
+		backgroundColor: "white",
 		padding: 15,
-		alignItems: "center",
+		borderRadius: 8,
+		marginBottom: 10,
+		elevation: 2, // Sombra para Android
+		shadowColor: "#000", // Sombra para iOS
+		shadowOffset: {width: 0, height: 1},
+		shadowOpacity: 0.22,
+		shadowRadius: 2.22,
 	},
-	notificationText: {
-		color: "white",
+	notaNumero: {
+		fontSize: 18,
+		fontWeight: "bold",
+	},
+	notaValor: {
 		fontSize: 16,
+		fontWeight: "bold",
+		color: "#28a745",
+		marginTop: 5,
+		textAlign: "right",
 	},
 });

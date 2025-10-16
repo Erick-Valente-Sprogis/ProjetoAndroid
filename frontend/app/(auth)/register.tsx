@@ -1,7 +1,5 @@
-// Cole este código em: primeiro/app/(auth)/register.tsx
 import {Ionicons} from "@expo/vector-icons";
 import {Link, useRouter} from "expo-router";
-import {createUserWithEmailAndPassword, signOut} from "firebase/auth";
 import React, {useState} from "react";
 import {
 	Alert,
@@ -11,22 +9,34 @@ import {
 	TextInput,
 	TouchableOpacity,
 	View,
+	ScrollView,
 } from "react-native";
-import {auth} from "../../firebaseConfig";
+import axios from "axios"; // Importamos o Axios
 
 export default function RegisterScreen() {
+	// Adicionamos estados для os novos campos
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [fullName, setFullName] = useState("");
+	const [phone, setPhone] = useState("");
 	const router = useRouter();
 
 	const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 	const [emailError, setEmailError] = useState("");
 	const [passwordError, setPasswordError] = useState("");
+	const [fullNameError, setFullNameError] = useState("");
 
+	// Atualizamos a validação para incluir o nome completo
 	const validateFields = () => {
 		let isValid = true;
 		setEmailError("");
 		setPasswordError("");
+		setFullNameError("");
+
+		if (!fullName) {
+			setFullNameError("O campo Nome Completo é obrigatório.");
+			isValid = false;
+		}
 
 		if (!email) {
 			setEmailError("O campo E-mail é obrigatório.");
@@ -47,39 +57,69 @@ export default function RegisterScreen() {
 		return isValid;
 	};
 
+	// --- A NOVA LÓGICA DE CADASTRO ---
 	const handleRegister = async () => {
 		if (!validateFields()) return;
 
 		try {
-			await createUserWithEmailAndPassword(auth, email, password);
-			await signOut(auth);
+			// Chamamos a NOSSA API no backend, em vez do Firebase diretamente
+			await axios.post("http://localhost:3000/auth/register", {
+				email,
+				password,
+				fullName,
+				phone,
+			});
+
 			Alert.alert(
 				"Conta Criada!",
 				"Sua conta foi criada com sucesso. Por favor, faça o login."
 			);
 			router.replace("/(auth)/login");
 		} catch (error: any) {
-			if (error.code === "auth/email-already-in-use") {
-				setEmailError("Este endereço de e-mail já está em uso.");
-			} else {
-				Alert.alert("Erro no Cadastro", "Ocorreu um erro inesperado.");
-			}
+			// Exibe a mensagem de erro que vem do NOSSO backend
+			const errorMessage =
+				error.response?.data?.message ||
+				"Ocorreu um erro ao tentar criar a conta.";
+			Alert.alert("Erro no Cadastro", errorMessage);
 		}
 	};
 
 	return (
-		<View style={styles.container}>
+		<ScrollView contentContainerStyle={styles.container}>
 			<Text style={styles.title}>Crie sua Conta</Text>
 
+			{/* Campo Nome Completo */}
+			<TextInput
+				style={styles.input}
+				placeholder="Nome Completo"
+				value={fullName}
+				onChangeText={setFullName}
+			/>
+			{fullNameError ? (
+				<Text style={styles.errorText}>{fullNameError}</Text>
+			) : null}
+
+			{/* Campo E-mail */}
 			<TextInput
 				style={styles.input}
 				placeholder="Email"
 				value={email}
 				onChangeText={setEmail}
 				autoCapitalize="none"
+				keyboardType="email-address"
 			/>
 			{emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
+			{/* Campo Telefone (Opcional) */}
+			<TextInput
+				style={styles.input}
+				placeholder="Telefone / WhatsApp (Opcional)"
+				value={phone}
+				onChangeText={setPhone}
+				keyboardType="phone-pad"
+			/>
+
+			{/* Campo Senha */}
 			<View style={styles.inputContainer}>
 				<TextInput
 					style={styles.inputField}
@@ -112,12 +152,12 @@ export default function RegisterScreen() {
 					<Text style={styles.linkText}>Já tem uma conta? Faça login</Text>
 				</TouchableOpacity>
 			</Link>
-		</View>
+		</ScrollView>
 	);
 }
 
 const styles = StyleSheet.create({
-	container: {flex: 1, justifyContent: "center", padding: 16},
+	container: {flexGrow: 1, justifyContent: "center", padding: 16},
 	title: {
 		fontSize: 28,
 		textAlign: "center",
@@ -154,6 +194,6 @@ const styles = StyleSheet.create({
 		marginTop: 20,
 	},
 	buttonText: {color: "#fff", fontSize: 16, fontWeight: "bold"},
-	linkButton: {marginTop: 20},
+	linkButton: {marginTop: 20, paddingBottom: 20},
 	linkText: {color: "#007BFF", textAlign: "center"},
 });
