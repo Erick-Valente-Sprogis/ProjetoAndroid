@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 if (!admin.apps.length) {
 	const serviceAccount = require(path.join(
 		__dirname,
-		"../../../serviceAccountKey.json"
+		"../../serviceAccountKey.json"
 	));
 
 	admin.initializeApp({
