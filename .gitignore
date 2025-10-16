@@ -1,64 +1,46 @@
-
-
-### ATENCAO! Renomeie este arquivo para .gitignore e coloque sem seu repositorio do projeto
-
-
-
-# Nodejs 
-# Ignora a pasta de dependências do Nodejs, que pode ser recriada 
-# com 'npm install'
+# Arquivos de Log e Dependências
+# Ignora logs e a pasta de dependências em qualquer subdiretório
+logs
+*.log
+npm-debug.log*
+yarn-error.log*
 node_modules/
 
-# Expo
-# Ignora os arquivos de cache e configurações específicas do Expo
-expo/
-*expo/
-expo-shared/
 
-# Native
-*orig*
-*jks
-*p8
-*p12
-*key
-*mobileprovision
+# Arquivos de Ambiente e Chaves Secretas (MAIS IMPORTANTE)
+# NUNCA envie estes arquivos para o GitHub!
+.env
+.env*.local
+serviceAccountKey.json
+*.pem
 
-# Metro
-metro-health-check*
 
-# Logs
-# Ignora arquivos de log gerados por erros do npm ou yarn
-npm-debuglog*
-yarn-debuglog*
-yarn-errorlog*
+# Específico do Frontend (Expo / React Native)
+# Ignora pastas de cache e build do Expo
+/frontend/.expo/
+/frontend/web-build/
+# Arquivo de tipos gerado pelo Expo
+/frontend/expo-env.d.ts
+# Chaves de assinatura de build
+/frontend/*.jks
+/frontend/*.keystore
 
-# Arquivos gerados pelo sistema operacional
-# Ignora arquivos como DS_Store (macOS) e Thumbsdb (Windows)
-DS_Store
-Thumbsdb
 
-# Arquivos gerados pelo ambiente de desenvolvimento
-# Ignora configurações específicas de IDEs como VSCode e IntelliJ
+# Específico do Backend (TypeScript / Prisma)
+# Ignora a pasta com o código JavaScript compilado
+/backend/dist/
+# Ignora os arquivos do banco de dados SQLite
+/backend/prisma/*.db
+/backend/prisma/*.db-journal
+# Ignora a pasta do cliente Prisma gerado
+/backend/src/generated/
+
+
+# Arquivos de Sistema Operacional
+.DS_Store
+Thumbs.db
+
+
+# Arquivos de Editor de Código (VS Code, Idea)
 .vscode/
 .idea/
-
-# Arquivos Build/Dist
-# Ignora pastas de build ou distribuição
-build/
-dist/
-web-build/
-
-# Arquivos temporarios
-*tmp
-*swp
-node_modules
-
-# macOS
-DS_Store
-*pem
-
-# local env files
-env*local
-
-# typescript
-*tsbuildinfo
