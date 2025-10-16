@@ -1,7 +1,7 @@
 import {signOut} from "firebase/auth";
 import React, {useState} from "react";
 import {Alert, Button, StyleSheet, Switch, Text, View} from "react-native";
-import {auth} from "../../firebaseConfig"; // Verifique se o caminho está correto
+import {auth} from "../../firebaseConfig";
 
 export default function ProfileScreen() {
 	const [isMfaEnabled, setIsMfaEnabled] = useState(false);
@@ -29,6 +29,14 @@ export default function ProfileScreen() {
 		}
 	};
 
+	const showToken = async () => {
+		const user = auth.currentUser;
+		if (user) {
+			const token = await user.getIdToken();
+			console.log(token); // O token aparecerá no console do Metro
+		}
+	};
+
 	return (
 		<View style={styles.container}>
 			<Text style={styles.title}>Meu Perfil</Text>
@@ -48,6 +56,8 @@ export default function ProfileScreen() {
 						value={isMfaEnabled}
 					/>
 				</View>
+
+				<Button title="Mostrar Token" onPress={showToken} />
 
 				<Button
 					title="Editar Perfil"

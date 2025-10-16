@@ -3,7 +3,7 @@ import {Stack, useRouter, useSegments} from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import {useCallback, useEffect, useState} from "react";
 import {View} from "react-native";
-import {AuthProvider, useAuth} from "../../context/AuthContext";
+import {AuthProvider, useAuth} from "../context/AuthContext";
 
 // Mantém a tela de splash visível enquanto fazemos as checagens
 SplashScreen.preventAutoHideAsync();
@@ -30,7 +30,7 @@ const InitialLayout = () => {
 		} else if (!user && !inAuthGroup) {
 			router.replace("/(auth)/login");
 		}
-	}, [user, segments, appReady]);
+	}, [user, segments, appReady, router]);
 
 	// Esta função esconde a tela de splash APENAS quando o layout raiz for renderizado
 	const onLayoutRootView = useCallback(async () => {
