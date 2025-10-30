@@ -35,6 +35,8 @@ serviceAccountKey.json
 # Ignora a pasta do cliente Prisma gerado
 /backend/src/generated/
 
+# Ignora a chave de serviço do Firebase no backend
+/backend/serviceAccountKey.json
 
 # Arquivos de Sistema Operacional
 .DS_Store

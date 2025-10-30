@@ -1,6 +1,8 @@
+// Em: frontend/app/(app)/index.tsx
+
 import {signOut} from "firebase/auth";
-import React, {useState, useEffect} from "react";
-import {useRouter} from "expo-router";
+import React, {useState, useEffect, useCallback} from "react"; // Importa o useCallback
+import {useAuth} from "../../context/AuthContext"; // Importa o useAuth
 import {
 	Alert,
 	Button,
@@ -11,9 +13,8 @@ import {
 	ActivityIndicator,
 } from "react-native";
 import {auth} from "../../firebaseConfig";
-import api from "../../src/services/api"; // Importando nosso cliente de API
+import api from "../../src/services/api";
 
-// Definindo um tipo para nossas Notas Fiscais para usar com TypeScript
 type NotaFiscal = {
 	id: string;
 	numero_nf: string;
@@ -21,35 +22,26 @@ type NotaFiscal = {
 	emitente_nome: string;
 };
 
-type UserProfile = {
-	id: string;
-	uid: string;
-	email: string;
-	fullName: string;
-	role: "user" | "admin";
-	// ... outros campos
-};
+// O tipo UserProfile não é mais necessário aqui, já vem do useAuth
 
 export default function DashboardScreen() {
-	const user = auth.currentUser;
+	// 1. Pega o user e o profile do Context!
+	const {user, profile} = useAuth();
+
 	const [notas, setNotas] = useState<NotaFiscal[]>([]);
 	const [loading, setLoading] = useState(true);
 
-	const fetchNotas = async () => {
-		if (!user) return;
+	// 2. 'fetchNotas' agora usa 'useCallback'
+	const fetchNotas = useCallback(async () => {
+		if (!user) return; // 'user' agora vem do useAuth
 		setLoading(true);
 		try {
-			// Pega o token de autenticação do usuário logado
 			const token = await user.getIdToken();
-
-			// Faz a chamada para a API, enviando o token no cabeçalho
 			const response = await api.get("/notas", {
 				headers: {
 					Authorization: `Bearer ${token}`,
 				},
 			});
-
-			// Atualiza o estado com as notas recebidas do backend
 			setNotas(response.data);
 		} catch (error) {
 			console.error("Erro ao buscar notas:", error);
@@ -57,23 +49,39 @@ export default function DashboardScreen() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [user]); // 'user' é a dependência
 
-	// useEffect para chamar a função fetchNotas assim que a tela for montada
+	// 3. 'useEffect' agora está 100% correto
 	useEffect(() => {
-		fetchNotas();
-	}, [user]); // Roda a função sempre que o objeto 'user' mudar
+		if (user) {
+			fetchNotas();
+		}
+	}, [user, fetchNotas]);
 
 	const handleLogout = () => {
 		signOut(auth);
 	};
 
+	// 4. Função (placeholder) para o Admin
+	const handleScanPress = () => {
+		Alert.alert("Admin", "TODO: Implementar scanner e upload!");
+	};
+
 	return (
 		<View style={styles.container}>
 			<Text style={styles.title}>Dashboard de Notas</Text>
+
+			{/* 5. Mostra o nome do perfil ou o e-mail */}
 			<Text style={styles.emailText}>
-				{user ? user.email : "Carregando..."}
+				Olá, {profile ? profile.fullName : user?.email}
 			</Text>
+
+			{/* 6. AQUI! O botão de Admin que só aparece se o 'role' for 'admin' */}
+			{profile?.role === "admin" && (
+				<View style={styles.adminButton}>
+					<Button title="Escanear Nova NF" onPress={handleScanPress} />
+				</View>
+			)}
 
 			{loading ? (
 				<ActivityIndicator size="large" color="#007BFF" />
@@ -105,6 +113,7 @@ export default function DashboardScreen() {
 	);
 }
 
+// 7. Adiciona o 'adminButton' aos estilos
 const styles = StyleSheet.create({
 	container: {flex: 1, padding: 20, backgroundColor: "#f5f5f5"},
 	title: {
@@ -119,6 +128,11 @@ const styles = StyleSheet.create({
 		color: "gray",
 		marginBottom: 20,
 	},
+	adminButton: {
+		// Estilo para o botão de admin
+		marginBottom: 20,
+		marginHorizontal: 40,
+	},
 	logoutButton: {paddingTop: 20},
 	emptyText: {textAlign: "center", marginTop: 50, color: "gray"},
 	notaItem: {
@@ -126,8 +140,8 @@ const styles = StyleSheet.create({
 		padding: 15,
 		borderRadius: 8,
 		marginBottom: 10,
-		elevation: 2, // Sombra para Android
-		shadowColor: "#000", // Sombra para iOS
+		elevation: 2,
+		shadowColor: "#000",
 		shadowOffset: {width: 0, height: 1},
 		shadowOpacity: 0.22,
 		shadowRadius: 2.22,
