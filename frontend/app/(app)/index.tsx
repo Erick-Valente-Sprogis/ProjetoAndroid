@@ -118,56 +118,81 @@ export default function DashboardScreen() {
 
 		setIsUploading(true);
 
-		// 1. O FormData é montado da mesma forma
 		const formData = new FormData();
 		formData.append("chave_acesso", chaveAcesso);
 		formData.append("numero_nf", numeroNf);
 		formData.append("data_emissao", dataEmissao);
 		formData.append("valor_total", valorTotal);
-		formData.append("pdf", {
-			uri: pickedDocument.uri,
-			name: pickedDocument.name,
-			type: pickedDocument.mimeType || "application/pdf",
-		} as any);
+
+		// --- INÍCIO DA CORREÇÃO 1 (LIDANDO COM 'data:' URI) ---
+		// O console.log mostrou que o picker está retornando um 'data:' URI (Base64)
+		// Precisamos converter isso em um 'Blob' para o upload.
+		try {
+			if (pickedDocument.uri.startsWith("data:")) {
+				const response = await fetch(pickedDocument.uri);
+				const blob = await response.blob();
+				formData.append("pdf", blob, pickedDocument.name);
+			} else {
+				// Este é o código antigo, para o caso de um 'file://' URI
+				formData.append("pdf", {
+					uri: pickedDocument.uri,
+					name: pickedDocument.name,
+					type: pickedDocument.mimeType || "application/pdf",
+				} as any);
+			}
+		} catch (e) {
+			console.error("Erro ao converter 'data:' URI para Blob:", e);
+			Alert.alert(
+				"Erro",
+				"Não foi possível processar o arquivo PDF selecionado."
+			);
+			setIsUploading(false);
+			return; // Para o processo aqui
+		}
+		// --- FIM DA CORREÇÃO 1 ---
 
 		try {
-			// 2. Pegamos o token e a URL da API
 			const token = await user.getIdToken();
-			const apiUrl = `${api.defaults.baseURL}/notas`; // Pega a URL do seu 'api.ts' (ex: http://192.168.1.7:3000/notas)
+			const apiUrl = `${api.defaults.baseURL}/notas`; // Pega a URL do 'api.ts'
 
-			// 3. AQUI ESTÁ A MUDANÇA: Usando 'fetch'
 			const response = await fetch(apiUrl, {
 				method: "POST",
 				headers: {
 					Authorization: `Bearer ${token}`,
-					// NÃO definimos o 'Content-Type' aqui. O fetch faz isso sozinho.
+					// --- CORREÇÃO 2 (BYPASS DO localtunnel) ---
+					"Bypass-Tunnel-Reminder": "true",
 				},
-				body: formData, // O fetch entende o FormData nativamente
+				body: formData,
 			});
 
-			// 4. Tratamento da resposta do 'fetch'
+			// Tratamento da resposta do 'fetch'
 			if (!response.ok) {
 				// Se a resposta não for 2xx (ex: 400, 404, 500)
-				const errorData = await response.json(); // Tenta ler a mensagem de erro do backend
+				const errorText = await response.text(); // Pega o texto do erro
+				console.error("Erro do Servidor (texto):", errorText);
 				throw new Error(
-					errorData.message || `Erro no servidor: ${response.status}`
+					`Erro no servidor: ${response.status} (Veja o console do app para detalhes)`
 				);
 			}
 
-			// Se a resposta for OK (201, etc.)
-			const responseData = await response.json();
-			// console.log("Resposta do upload:", responseData); // Opcional
-
+			await response.json(); // Parse response but don't store if unused
 			Alert.alert("Sucesso!", "Nota fiscal enviada!");
 			setModalVisible(false);
 			resetForm();
-			fetchNotas(); // Atualiza a lista!
+			fetchNotas(); // Atualiza a lista de notas!
 		} catch (error: any) {
-			console.error("Erro no upload:", error.message);
-			Alert.alert(
-				"Erro no Upload",
-				`Não foi possível enviar a nota. Detalhe: ${error.message}`
-			);
+			console.error("Erro no upload (fetch):", error.message);
+			if (error.message.includes("JSON")) {
+				Alert.alert(
+					"Erro de Conexão",
+					"O backend retornou um erro inesperado (não-JSON). Verifique o terminal do backend."
+				);
+			} else {
+				Alert.alert(
+					"Erro no Upload",
+					`Não foi possível enviar a nota. Detalhe: ${error.message}`
+				);
+			}
 		} finally {
 			setIsUploading(false);
 		}

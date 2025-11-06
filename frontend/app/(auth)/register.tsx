@@ -1,9 +1,10 @@
 // app/(auth)/register.tsx
 // app/(auth)/register.tsx
 
-import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter } from "expo-router";
-import React, { useState } from "react";
+import {Ionicons} from "@expo/vector-icons";
+import {Link, useRouter} from "expo-router";
+import React, {useState} from "react";
+import api from "../../src/services/api";
 import {
 	Alert,
 	Pressable,
@@ -14,7 +15,6 @@ import {
 	View,
 	ScrollView,
 } from "react-native";
-import axios from "axios";
 
 export default function RegisterScreen() {
 	const [email, setEmail] = useState("");
@@ -60,7 +60,7 @@ export default function RegisterScreen() {
 	const handleRegister = async () => {
 		if (!validateFields()) return;
 		try {
-			await axios.post("http://localhost:3000/auth/register", {
+			await api.post("/auth/register", {
 				email,
 				password,
 				fullName,
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
 		elevation: 8,
 		shadowColor: "#000",
 		shadowOpacity: 0.3,
-		shadowOffset: { width: 0, height: 4 },
+		shadowOffset: {width: 0, height: 4},
 		shadowRadius: 8,
 	},
 	form: {
@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 10,
 		marginTop: 12,
 	},
-	inputField: { flex: 1, height: 50 },
-	icon: { padding: 5 },
+	inputField: {flex: 1, height: 50},
+	icon: {padding: 5},
 	errorText: {
 		color: "red",
 		marginTop: 4,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		fontWeight: "bold",
 	},
-	linkButton: { marginTop: 18 },
-	linkText: { textAlign: "center", color: "#555", fontSize: 14 },
-	linkHighlight: { color: "#1E4369", fontWeight: "bold" },
+	linkButton: {marginTop: 18},
+	linkText: {textAlign: "center", color: "#555", fontSize: 14},
+	linkHighlight: {color: "#1E4369", fontWeight: "bold"},
 });
