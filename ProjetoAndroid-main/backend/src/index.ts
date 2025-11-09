@@ -1,5 +1,6 @@
 import cors from "cors";
 import dotenv from "dotenv";
+import path from 'path';
 import express, { Request, Response } from "express";
 import authRoutes from "./routes/authRoutes";
 import notaFiscalRoutes from "./routes/notaFiscalRoutes";
