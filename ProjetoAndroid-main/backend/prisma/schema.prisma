@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Começando com SQLite, fácil de usar
+  url      = env("DATABASE_URL")
+}
+
+// Modelo para os dados do perfil do usuário
+model User {
+  id        String   @id @default(uuid())
+  uid       String   @unique // UID do Firebase Authentication
+  email     String   @unique
+  fullName  String
+  phone     String
+  photoURL  String? // O '?' torna o campo opcional
+  role      String   @default("user") // 'user' ou 'admin'
+  isBlocked Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relação: Um usuário pode ter criado várias notas fiscais
+  notasFiscais NotaFiscal[]
+}
+
+// Modelo para as Notas Fiscais
+model NotaFiscal {
+  id            String   @id @default(uuid())
+  chave_acesso  String   @unique
+  numero_nf     String
+  emitente_nome String
+  emitente_cnpj String
+  data_emissao  DateTime
+  valor_total   Float
+  url_imagem    String
+  criado_em     DateTime @default(now())
+
+  // Relação: A nota foi criada por um usuário
+  criado_por    User     @relation(fields: [criado_por_uid], references: [uid])
+  criado_por_uid String
+}
