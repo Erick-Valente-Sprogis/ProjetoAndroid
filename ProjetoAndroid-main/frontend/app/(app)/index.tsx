@@ -1,26 +1,26 @@
 // frontend/app/(app)/index.tsx - Dashboard com Modal de Opções
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useAuth } from "../../context/AuthContext";
-import {
-	Alert,
-	StyleSheet,
-	Text,
-	View,
-	FlatList,
-	ActivityIndicator,
-	Modal,
-	TextInput,
-	TouchableOpacity,
-	RefreshControl,
-	StatusBar,
-	Platform,
-	ScrollView,
-} from "react-native";
-import api from "../../src/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import * as ImagePicker from 'expo-image-picker';
+import React, { useCallback, useEffect, useState } from "react";
+import {
+	ActivityIndicator,
+	Alert,
+	FlatList,
+	Modal,
+	Platform,
+	RefreshControl,
+	ScrollView,
+	StatusBar,
+	StyleSheet,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	View
+} from "react-native";
+import { useAuth } from "../../context/AuthContext";
+import api from "../../src/services/api";
 
 type NotaFiscal = {
 	id: string;
