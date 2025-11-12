@@ -1,13 +1,54 @@
 // Em: frontend/src/services/api.ts
+
 import axios from "axios";
 
-const api = axios.create({
-	baseURL: "https://erick-projeto-nf.loca.lt",
+// 1. A URL do túnel é a NOSSA ÚNICA VERDADE
+// Ela funciona na Web e no Mobile e já inclui o prefixo '/api'
+const baseURL = "https://erick-projeto-nf.loca.lt/api";
 
-	// ADICIONE ESTE BLOCO 'headers' ABAIXO:
+const api = axios.create({
+	baseURL: baseURL,
 	headers: {
+		// 2. O 'header' para pular a página de aviso do túnel
 		"Bypass-Tunnel-Reminder": "true",
 	},
+	timeout: 10000, // 10 segundos
 });
+
+// 3. Seus interceptors de log (do seu colega) são ótimos e podem ficar!
+api.interceptors.request.use(
+	(config) => {
+		// Agora este log vai mostrar a URL CORRETA (ex: /auth/me)
+		console.log("🔵 Requisição:", config.method?.toUpperCase(), config.url);
+		return config;
+	},
+	(error) => {
+		console.error("🔴 Erro na requisição:", error);
+		return Promise.reject(error);
+	}
+);
+
+api.interceptors.response.use(
+	(response) => {
+		console.log("🟢 Resposta:", response.status, response.config.url);
+		return response;
+	},
+	(error) => {
+		console.error("🔴 Erro na resposta:", error.message);
+		if (
+			error.code === "ERR_NETWORK" ||
+			error.code === "ECONNABORTED" ||
+			error.response?.status === 404
+		) {
+			console.error(
+				`❌ ERRO DE CONEXÃO! A API (${error.config?.baseURL}) não foi encontrada ou está offline.`
+			);
+			console.error(
+				"Verifique se seus dois terminais de backend (npm run dev E lt ...) estão rodando."
+			);
+		}
+		return Promise.reject(error);
+	}
+);
 
 export default api;

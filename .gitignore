@@ -6,6 +6,8 @@ npm-debug.log*
 yarn-error.log*
 node_modules/
 
+.vscode
+
 
 # Arquivos de Ambiente e Chaves Secretas (MAIS IMPORTANTE)
 # NUNCA envie estes arquivos para o GitHub!

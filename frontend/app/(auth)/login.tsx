@@ -51,46 +51,66 @@ export default function LoginScreen() {
 	};
 
 	const handleLogin = async () => {
-		if (!validateFields()) return;
+	if (!validateFields()) return;
 
-		try {
-			await signInWithEmailAndPassword(auth, email, password);
-			router.replace("/(app)");
-		} catch (error: any) {
-			switch (error.code) {
-				case "auth/user-not-found":
-					Alert.alert(
-						"Usuário não encontrado",
-						"Parece que você ainda não tem uma conta. Vamos criar uma!",
-						[
-							{ text: "Agora não", style: "cancel" },
-							{
-								text: "Cadastro",
-								onPress: () => router.push("/(auth)/register"),
-							},
-						]
-					);
-					break;
+	console.log("====================================");
+	console.log("🔵 1. Iniciando login...");
+	console.log("🔵    Email:", email);
+	
+	try {
+		console.log("🔵 2. Chamando Firebase signInWithEmailAndPassword...");
+		const userCredential = await signInWithEmailAndPassword(auth, email, password);
+		
+		console.log("🔵 3. Login bem-sucedido!");
+		console.log("🔵    User UID:", userCredential.user.uid);
+		console.log("🔵    User Email:", userCredential.user.email);
+		
+		console.log("🔵 4. Tentando navegar para /(app)...");
+		router.replace("/(app)");
+		
+		console.log("🔵 5. Comando router.replace executado!");
+		console.log("====================================");
+	} catch (error: any) {
+		console.log("====================================");
+		console.log("🔴 ERRO no login!");
+		console.log("🔴 Código:", error.code);
+		console.log("🔴 Mensagem:", error.message);
+		console.log("====================================");
+		
+		switch (error.code) {
+			case "auth/user-not-found":
+				Alert.alert(
+					"Usuário não encontrado",
+					"Parece que você ainda não tem uma conta. Vamos criar uma!",
+					[
+						{ text: "Agora não", style: "cancel" },
+						{
+							text: "Cadastro",
+							onPress: () => router.push("/(auth)/register"),
+						},
+					]
+				);
+				break;
 
-				case "auth/invalid-credential":
-				case "auth/wrong-password":
-					setEmailError("E-mail ou senha incorretos.");
-					setPasswordError(" ");
-					break;
+			case "auth/invalid-credential":
+			case "auth/wrong-password":
+				setEmailError("E-mail ou senha incorretos.");
+				setPasswordError(" ");
+				break;
 
-				case "auth/too-many-requests":
-					Alert.alert(
-						"Acesso Bloqueado Temporariamente",
-						"Muitas tentativas falhas. Por favor, redefina sua senha ou aguarde."
-					);
-					break;
+			case "auth/too-many-requests":
+				Alert.alert(
+					"Acesso Bloqueado Temporariamente",
+					"Muitas tentativas falhas. Por favor, redefina sua senha ou aguarde."
+				);
+				break;
 
-				default:
-					Alert.alert("Erro ao fazer login", "Ocorreu um problema inesperado.");
-					break;
-			}
+			default:
+				Alert.alert("Erro ao fazer login", "Ocorreu um problema inesperado.");
+				break;
 		}
-	};
+	}
+};
 
 	const handleSendResetEmail = () => {
 		if (!resetEmail || !/\S+@\S+\.\S+/.test(resetEmail)) {
