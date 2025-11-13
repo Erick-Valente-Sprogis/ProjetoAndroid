@@ -1,24 +1,32 @@
 // Em: frontend/src/services/api.ts
 
 import axios from "axios";
+import {Platform} from "react-native";
 
 // 1. A URL do túnel é a NOSSA ÚNICA VERDADE
 // Ela funciona na Web e no Mobile e já inclui o prefixo '/api'
-const baseURL = "https://erick-projeto-nf.loca.lt/api";
+const getBaseURL = () => {
+	if (Platform.OS === "web") {
+		// ✅ Para WEB (navegador), use localhost
+		return "http://localhost:3000/api";
+	} else {
+		// Para Android/iOS, use o túnel
+		return "https://erick-projeto-nf.loca.lt/api";
+	}
+};
 
 const api = axios.create({
-	baseURL: baseURL,
+	baseURL: getBaseURL(),
 	headers: {
-		// 2. O 'header' para pular a página de aviso do túnel
+		"Content-Type": "application/json",
 		"Bypass-Tunnel-Reminder": "true",
 	},
-	timeout: 10000, // 10 segundos
+	timeout: 10000,
 });
 
 // 3. Seus interceptors de log (do seu colega) são ótimos e podem ficar!
 api.interceptors.request.use(
 	(config) => {
-		// Agora este log vai mostrar a URL CORRETA (ex: /auth/me)
 		console.log("🔵 Requisição:", config.method?.toUpperCase(), config.url);
 		return config;
 	},
@@ -41,11 +49,9 @@ api.interceptors.response.use(
 			error.response?.status === 404
 		) {
 			console.error(
-				`❌ ERRO DE CONEXÃO! A API (${error.config?.baseURL}) não foi encontrada ou está offline.`
+				`❌ ERRO DE CONEXÃO! A API não foi encontrada ou está offline.`
 			);
-			console.error(
-				"Verifique se seus dois terminais de backend (npm run dev E lt ...) estão rodando."
-			);
+			console.error("Verifique se o backend está rodando.");
 		}
 		return Promise.reject(error);
 	}

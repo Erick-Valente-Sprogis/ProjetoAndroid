@@ -1,3 +1,5 @@
+// Em: backend/src/middlewares/authMiddleware.ts
+
 import {Request, Response, NextFunction} from "express";
 import {PrismaClient} from "@prisma/client";
 import admin from "firebase-admin";
@@ -5,17 +7,26 @@ import path from "path";
 
 const prisma = new PrismaClient();
 
+// Garante que o Firebase Admin só seja inicializado uma vez
 if (!admin.apps.length) {
-	const serviceAccount = require(path.join(
-		__dirname,
-		"../../serviceAccountKey.json"
-	));
+	try {
+		const serviceAccount = require(path.join(
+			__dirname,
+			"../../serviceAccountKey.json"
+		));
 
-	admin.initializeApp({
-		credential: admin.credential.cert(serviceAccount),
-	});
+		admin.initializeApp({
+			credential: admin.credential.cert(serviceAccount),
+		});
+	} catch (error) {
+		console.error("FALHA AO LER serviceAccountKey.json:", error);
+		console.error(
+			"Verifique se o arquivo 'serviceAccountKey.json' existe na raiz da pasta 'backend'."
+		);
+	}
 }
 
+// Declaração para o TypeScript entender o 'req.user'
 declare global {
 	namespace Express {
 		interface Request {
@@ -24,6 +35,7 @@ declare global {
 	}
 }
 
+// --- FERRAMENTA 1 (O Segurança de Login) ---
 export const authMiddleware = async (
 	req: Request,
 	res: Response,
@@ -39,14 +51,11 @@ export const authMiddleware = async (
 
 	const token = authorization.split("Bearer ")[1];
 
-	// ===== ADICIONANDO A VERIFICAÇÃO AQUI =====
 	if (!token) {
 		return res.status(401).send({message: "Formato do token inválido."});
 	}
-	// ===========================================
 
 	try {
-		// Agora o TypeScript sabe que 'token' é uma string
 		const decodedToken = await admin.auth().verifyIdToken(token);
 		req.user = decodedToken;
 		next();
@@ -56,18 +65,18 @@ export const authMiddleware = async (
 	}
 };
 
+// --- FERRAMENTA 2 (O Segurança Admin - A QUE ESTÁ FALTANDO) ---
 export const adminMiddleware = async (
 	req: Request,
 	res: Response,
 	next: NextFunction
 ) => {
-	// ... (seu código do adminMiddleware continua aqui, sem alterações)
 	const uid = req.user?.uid;
 
 	if (!uid) {
 		return res
 			.status(403)
-			.send({message: "Acesso negado. UID não encontrado."});
+			.send({message: "Acesso negado. UID não encontrado no token."});
 	}
 
 	try {
@@ -81,7 +90,7 @@ export const adminMiddleware = async (
 				.send({message: "Acesso negado. Requer permissão de administrador."});
 		}
 
-		next();
+		next(); // Usuário é admin! Pode passar.
 	} catch (error) {
 		return res
 			.status(500)

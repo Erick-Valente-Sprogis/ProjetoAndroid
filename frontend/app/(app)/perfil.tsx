@@ -1,8 +1,9 @@
-// Em: frontend/app/(app)/perfil.tsx
+// frontend/app/(app)/perfil.tsx
 
-import React, {useState} from "react"; // Remova 'useRouter' por enquanto
+import React, {useState} from "react";
 import {useAuth} from "../../context/AuthContext";
 import {signOut} from "firebase/auth";
+import {useRouter} from "expo-router";
 import {
 	StyleSheet,
 	Text,
@@ -11,28 +12,65 @@ import {
 	ScrollView,
 	StatusBar,
 	Platform,
-	Pressable,
+	TouchableOpacity,
 	ActivityIndicator,
 } from "react-native";
 import {auth} from "../../firebaseConfig";
 import {Ionicons} from "@expo/vector-icons";
-// Não precisamos do 'useRouter' para este teste
 
 export default function PerfilScreen() {
 	const {user, profile} = useAuth();
-	// 'isLoggingOut' não é necessário para o teste
-	// const [isLoggingOut, setIsLoggingOut] = useState(false);
+	const router = useRouter();
+	const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-	// MANTENHA A VERSÃO DE TESTE SIMPLES DO 'handleLogout'
-	const handleLogout = () => {
-		Alert.alert(
-			"TESTE DE CLIQUE",
-			"O botão 'Sair da Conta' FOI CLICADO e a função 'handleLogout' foi chamada."
-		);
+	console.log("🟢 PerfilScreen renderizou!");
+
+	const handleLogout = async () => {
+		console.log("🟡 handleLogout chamado!");
+
+		// Detecta se está na web ou mobile
+		if (Platform.OS === "web") {
+			// Web: usa window.confirm
+			const confirmar = window.confirm("Tem certeza que deseja sair?");
+			if (!confirmar) return;
+		} else {
+			// Mobile: usa Alert.alert
+			Alert.alert("Confirmar Saída", "Tem certeza que deseja sair?", [
+				{text: "Cancelar", style: "cancel"},
+				{
+					text: "Sair",
+					style: "destructive",
+					onPress: () => executarLogout(),
+				},
+			]);
+			return;
+		}
+
+		executarLogout();
+
+		async function executarLogout() {
+			setIsLoggingOut(true);
+			try {
+				await signOut(auth);
+				console.log("✅ Logout realizado!");
+				router.replace("/(auth)/login");
+			} catch (error) {
+				console.error("❌ Erro:", error);
+				window.alert("Não foi possível sair.");
+			} finally {
+				setIsLoggingOut(false);
+			}
+		}
 	};
 
-	// 'isLoggingOut' não é necessário para o teste
-	// if (isLoggingOut) { ... }
+	if (isLoggingOut) {
+		return (
+			<View style={styles.loadingContainer}>
+				<ActivityIndicator size="large" color="#1E4369" />
+				<Text style={styles.loadingText}>Saindo...</Text>
+			</View>
+		);
+	}
 
 	return (
 		<View style={styles.container}>
@@ -42,11 +80,27 @@ export default function PerfilScreen() {
 				<Text style={styles.appBarTitle}>Perfil</Text>
 			</View>
 
-			{/* AQUI ESTÁ A CORREÇÃO! */}
-			<ScrollView keyboardShouldPersistTaps="handled">
+			<TouchableOpacity
+				onPress={() => {
+					console.log("🔴🔴🔴 BOTÃO VERMELHO CLICADO!");
+					alert("Teste OK!");
+				}}
+				style={{
+					backgroundColor: "red",
+					padding: 20,
+					margin: 20,
+					alignItems: "center",
+					zIndex: 9999,
+				}}
+			>
+				<Text style={{color: "white", fontSize: 18, fontWeight: "bold"}}>
+					🧪 CLIQUE AQUI PARA TESTAR
+				</Text>
+			</TouchableOpacity>
+
+			<ScrollView>
 				{/* Header do Perfil */}
 				<View style={styles.profileHeader}>
-					{/* ... (conteúdo do header) ... */}
 					<View style={styles.avatar}>
 						<Text style={styles.avatarText}>
 							{profile?.fullName?.charAt(0).toUpperCase() ||
@@ -68,105 +122,104 @@ export default function PerfilScreen() {
 
 				{/* Informações da Conta */}
 				<View style={styles.section}>
-					{/* ... (conteúdo de Informações) ... */}
 					<Text style={styles.sectionTitle}>INFORMAÇÕES DA CONTA</Text>
-					<View style={styles.infoCard}>{/* ...infoRows... */}</View>
+					<View style={styles.infoCard}>
+						<View style={styles.infoRow}>
+							<View style={styles.infoIcon}>
+								<Ionicons name="mail" size={20} color="#1E4369" />
+							</View>
+							<View style={styles.infoContent}>
+								<Text style={styles.infoLabel}>E-mail</Text>
+								<Text style={styles.infoValue}>{user?.email}</Text>
+							</View>
+						</View>
+						<View style={styles.divider} />
+						<View style={styles.infoRow}>
+							<View style={styles.infoIcon}>
+								<Ionicons name="person" size={20} color="#1E4369" />
+							</View>
+							<View style={styles.infoContent}>
+								<Text style={styles.infoLabel}>Nome</Text>
+								<Text style={styles.infoValue}>
+									{profile?.fullName || "Não informado"}
+								</Text>
+							</View>
+						</View>
+						<View style={styles.divider} />
+						<View style={styles.infoRow}>
+							<View style={styles.infoIcon}>
+								<Ionicons name="shield" size={20} color="#1E4369" />
+							</View>
+							<View style={styles.infoContent}>
+								<Text style={styles.infoLabel}>Tipo de Conta</Text>
+								<Text style={styles.infoValue}>
+									{profile?.role === "admin" ? "Administrador" : "Usuário"}
+								</Text>
+							</View>
+						</View>
+					</View>
 				</View>
 
 				{/* Ações */}
 				<View style={styles.section}>
-					{/* ... (conteúdo de Ações) ... */}
 					<Text style={styles.sectionTitle}>AÇÕES</Text>
-					<Pressable
-						style={styles.actionButton}
-						android_ripple={{color: "rgba(30, 67, 105, 0.1)"}}
-					>
-						{/* ... */}
-					</Pressable>
-					{/* ...outros botões de ação... */}
+					<TouchableOpacity style={styles.actionButton}>
+						<Ionicons name="key-outline" size={24} color="#1E4369" />
+						<Text style={styles.actionButtonText}>Alterar Senha</Text>
+						<Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.actionButton}>
+						<Ionicons name="notifications-outline" size={24} color="#1E4369" />
+						<Text style={styles.actionButtonText}>Notificações</Text>
+						<Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
+					</TouchableOpacity>
 				</View>
 
 				{/* Sobre */}
 				<View style={styles.section}>
-					{/* ... (conteúdo de Sobre) ... */}
 					<Text style={styles.sectionTitle}>SOBRE</Text>
-					<Pressable
-						style={styles.actionButton}
-						android_ripple={{color: "rgba(30, 67, 105, 0.1)"}}
-					>
-						{/* ... */}
-					</Pressable>
-					{/* ...outros botões de sobre... */}
+					<TouchableOpacity style={styles.actionButton}>
+						<Ionicons name="help-circle-outline" size={24} color="#1E4369" />
+						<Text style={styles.actionButtonText}>Ajuda</Text>
+						<Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
+					</TouchableOpacity>
+					<TouchableOpacity style={styles.actionButton}>
+						<Ionicons name="document-text-outline" size={24} color="#1E4369" />
+						<Text style={styles.actionButtonText}>Termos de Uso</Text>
+						<Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
+					</TouchableOpacity>
 				</View>
 
-				{/* O BOTÃO DE LOGOUT VOLTOU PARA DENTRO DO SCROLLVIEW */}
-				<Pressable
-					style={styles.logoutButton}
-					onPress={handleLogout}
-					android_ripple={{color: "rgba(244, 67, 54, 0.2)"}}
+				{/* Botão de Logout */}
+				<TouchableOpacity
+					onPress={() => {
+						console.log("🟡🟡🟡 BOTÃO DE LOGOUT CLICADO DIRETAMENTE!");
+						handleLogout();
+					}}
+					style={{
+						backgroundColor: "#FF0000",
+						padding: 20,
+						margin: 20,
+						alignItems: "center",
+						borderRadius: 8,
+					}}
 				>
-					<Ionicons name="log-out-outline" size={24} color="#F44336" />
-					<Text style={styles.logoutButtonText}>Sair da Conta</Text>
-				</Pressable>
+					<Text style={{color: "#FFFFFF", fontSize: 18, fontWeight: "bold"}}>
+						🚪 SAIR (TESTE)
+					</Text>
+				</TouchableOpacity>
 
 				<Text style={styles.versionText}>Versão 1.0.0</Text>
 			</ScrollView>
-			{/* O ScrollView fecha aqui, com o botão dentro dele */}
 		</View>
 	);
 }
 
-// OS ESTILOS ORIGINAIS (COM O 'logoutButtonText' QUE EU ESQUECI ANTES)
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: "#F5F5F5",
 	},
-	// ... (todos os seus outros estilos, .appBar, .profileHeader, .avatar, etc.) ...
-	// ... (infoCard, actionButton, etc.) ...
-
-	// O estilo do botão de logout (como estava antes)
-	logoutButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		backgroundColor: "#FFFFFF",
-		marginHorizontal: 16,
-		marginTop: 16, // A margem superior é importante
-		padding: 16,
-		borderRadius: 8,
-		elevation: 2,
-		gap: 12,
-	},
-
-	// O estilo que eu tinha esquecido de adicionar
-	logoutButtonText: {
-		fontSize: 16,
-		fontWeight: "600",
-		color: "#F44336",
-	},
-
-	versionText: {
-		textAlign: "center",
-		fontSize: 12,
-		color: "#9E9E9E",
-		paddingVertical: 24,
-	},
-
-	// Estilos de loading (deixe-os aqui para quando formos reativar)
-	loadingContainer: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-		backgroundColor: "#F5F5F5",
-	},
-	loadingText: {
-		marginTop: 16,
-		fontSize: 16,
-		color: "#757575",
-	},
-	// ... (o resto dos seus estilos, .appBar, .profileHeader, .avatar, etc.) ...
-	// ... (só colei aqui os que são relevantes para o bug) ...
 	appBar: {
 		backgroundColor: "#1E4369",
 		paddingTop: Platform.OS === "android" ? StatusBar.currentHeight || 0 : 44,
@@ -284,5 +337,39 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		color: "#212121",
 		marginLeft: 16,
+	},
+	logoutButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		backgroundColor: "#FFFFFF",
+		marginHorizontal: 16,
+		marginTop: 16,
+		padding: 16,
+		borderRadius: 8,
+		elevation: 2,
+		gap: 12,
+	},
+	logoutButtonText: {
+		fontSize: 16,
+		fontWeight: "600",
+		color: "#F44336",
+	},
+	versionText: {
+		textAlign: "center",
+		fontSize: 12,
+		color: "#9E9E9E",
+		paddingVertical: 24,
+	},
+	loadingContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		backgroundColor: "#F5F5F5",
+	},
+	loadingText: {
+		marginTop: 16,
+		fontSize: 16,
+		color: "#757575",
 	},
 });
