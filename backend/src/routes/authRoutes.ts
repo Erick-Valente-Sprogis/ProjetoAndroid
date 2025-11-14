@@ -1,8 +1,32 @@
 import {Router} from "express";
-import {authMiddleware} from "../middlewares/authMiddleware"; // Importe o authMiddleware
-import {getMyProfile, registerUser} from "../controllers/authController"; // Importe getMyProfile
+import {PrismaClient} from "@prisma/client"; // ✅ ADICIONE ESTE IMPORT
+import {authMiddleware} from "../middlewares/authMiddleware";
+import {getMyProfile, registerUser} from "../controllers/authController";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const router = Router();
+const prisma = new PrismaClient();
+
+// ✅ CONFIGURAÇÃO DO MULTER (antes das rotas)
+const profileUploadDir = path.join(__dirname, "../../uploads/profiles");
+fs.mkdirSync(profileUploadDir, {recursive: true});
+
+const storage = multer.diskStorage({
+	destination: (req, file, cb) => {
+		cb(null, profileUploadDir);
+	},
+	filename: (req, file, cb) => {
+		const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+		const extension = path.extname(file.originalname);
+		cb(null, `profile-${uniqueSuffix}${extension}`);
+	},
+});
+
+const upload = multer({storage: storage});
+
+// ===== ROTAS =====
 
 router.post("/register", registerUser);
 router.get("/me", authMiddleware, getMyProfile);
@@ -13,5 +37,120 @@ router.get("/health", (req, res) => {
 		.status(200)
 		.json({message: "As rotas de autenticação estão funcionando!"});
 });
+
+// PUT /api/auth/profile - Atualiza perfil do usuário (apenas phone)
+router.put("/profile", authMiddleware, async (req, res) => {
+	try {
+		const uid = req.user?.uid;
+		const {phone} = req.body;
+
+		if (!uid) {
+			return res.status(401).json({message: "Não autenticado"});
+		}
+
+		// Busca o usuário atual
+		const userAtual = await prisma.user.findUnique({
+			where: {uid},
+		});
+
+		if (!userAtual) {
+			return res.status(404).json({message: "Usuário não encontrado"});
+		}
+
+		// Atualiza APENAS phone (photoURL é atualizado via upload)
+		const userAtualizado = await prisma.user.update({
+			where: {uid},
+			data: {
+				...(phone !== undefined && {phone}),
+			},
+			select: {
+				id: true,
+				uid: true,
+				email: true,
+				fullName: true,
+				phone: true,
+				photoURL: true,
+				role: true,
+				isBlocked: true,
+				createdAt: true,
+			},
+		});
+
+		console.log(`✅ Perfil atualizado: ${uid}`);
+		res.status(200).json(userAtualizado);
+	} catch (error) {
+		console.error("Erro ao atualizar perfil:", error);
+		res.status(500).json({message: "Erro ao atualizar perfil"});
+	}
+});
+
+// POST /api/auth/profile/photo - Upload de foto de perfil
+router.post(
+	"/profile/photo",
+	authMiddleware,
+	upload.single("photo"),
+	async (req, res) => {
+		try {
+			const uid = req.user?.uid;
+			const file = req.file;
+
+			if (!uid) {
+				return res.status(401).json({message: "Não autenticado"});
+			}
+
+			if (!file) {
+				return res.status(400).json({message: "Nenhuma foto enviada"});
+			}
+
+			// Busca o usuário atual
+			const userAtual = await prisma.user.findUnique({
+				where: {uid},
+			});
+
+			if (!userAtual) {
+				return res.status(404).json({message: "Usuário não encontrado"});
+			}
+
+			// Remove foto antiga se existir
+			if (userAtual.photoURL) {
+				const oldPhotoPath = path.join(
+					__dirname,
+					"../../uploads",
+					userAtual.photoURL
+				);
+				if (fs.existsSync(oldPhotoPath)) {
+					fs.unlinkSync(oldPhotoPath);
+					console.log("✅ Foto antiga removida:", oldPhotoPath);
+				}
+			}
+
+			// Caminho relativo da nova foto
+			const photoURL = `profiles/${file.filename}`;
+
+			// Atualiza no banco
+			const userAtualizado = await prisma.user.update({
+				where: {uid},
+				data: {photoURL},
+				select: {
+					id: true,
+					uid: true,
+					email: true,
+					fullName: true,
+					phone: true,
+					photoURL: true,
+					role: true,
+					isBlocked: true,
+					createdAt: true,
+				},
+			});
+
+			console.log(`✅ Foto de perfil atualizada: ${uid}`);
+			res.status(200).json(userAtualizado);
+		} catch (error) {
+			console.error("Erro ao fazer upload da foto:", error);
+			res.status(500).json({message: "Erro ao fazer upload da foto"});
+		}
+	}
+);
 
 export default router;

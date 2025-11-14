@@ -1,12 +1,12 @@
-// primeiro/app/(auth)/login.tsx
+// frontend/app/(auth)/login.tsx
 
-import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter } from "expo-router";
+import {Ionicons} from "@expo/vector-icons";
+import {Link, useRouter} from "expo-router";
 import {
 	sendPasswordResetEmail,
 	signInWithEmailAndPassword,
 } from "firebase/auth";
-import React, { useState } from "react";
+import React, {useState} from "react";
 import {
 	Alert,
 	Modal,
@@ -17,8 +17,11 @@ import {
 	TouchableOpacity,
 	View,
 	Image,
+	ActivityIndicator,
+	KeyboardAvoidingView,
+	Platform,
 } from "react-native";
-import { auth } from "../../firebaseConfig";
+import {auth} from "../../firebaseConfig";
 
 export default function LoginScreen() {
 	const [email, setEmail] = useState("");
@@ -28,9 +31,12 @@ export default function LoginScreen() {
 	const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 	const [emailError, setEmailError] = useState("");
 	const [passwordError, setPasswordError] = useState("");
+	const [isLoading, setIsLoading] = useState(false);
 
+	// Modal de recuperação de senha
 	const [isModalVisible, setIsModalVisible] = useState(false);
 	const [resetEmail, setResetEmail] = useState("");
+	const [isSendingReset, setIsSendingReset] = useState(false);
 
 	const validateFields = () => {
 		let isValid = true;
@@ -51,124 +57,199 @@ export default function LoginScreen() {
 	};
 
 	const handleLogin = async () => {
-	if (!validateFields()) return;
+		if (!validateFields()) return;
 
-	console.log("====================================");
-	console.log("🔵 1. Iniciando login...");
-	console.log("🔵    Email:", email);
-	
-	try {
-		console.log("🔵 2. Chamando Firebase signInWithEmailAndPassword...");
-		const userCredential = await signInWithEmailAndPassword(auth, email, password);
-		
-		console.log("🔵 3. Login bem-sucedido!");
-		console.log("🔵    User UID:", userCredential.user.uid);
-		console.log("🔵    User Email:", userCredential.user.email);
-		
-		console.log("🔵 4. Tentando navegar para /(app)...");
-		router.replace("/(app)");
-		
-		console.log("🔵 5. Comando router.replace executado!");
 		console.log("====================================");
-	} catch (error: any) {
-		console.log("====================================");
-		console.log("🔴 ERRO no login!");
-		console.log("🔴 Código:", error.code);
-		console.log("🔴 Mensagem:", error.message);
-		console.log("====================================");
-		
-		switch (error.code) {
-			case "auth/user-not-found":
-				Alert.alert(
-					"Usuário não encontrado",
-					"Parece que você ainda não tem uma conta. Vamos criar uma!",
-					[
-						{ text: "Agora não", style: "cancel" },
-						{
-							text: "Cadastro",
-							onPress: () => router.push("/(auth)/register"),
-						},
-					]
-				);
-				break;
+		console.log("🔵 1. Iniciando login...");
+		console.log("🔵    Email:", email);
 
-			case "auth/invalid-credential":
-			case "auth/wrong-password":
-				setEmailError("E-mail ou senha incorretos.");
-				setPasswordError(" ");
-				break;
+		setIsLoading(true);
 
-			case "auth/too-many-requests":
-				Alert.alert(
-					"Acesso Bloqueado Temporariamente",
-					"Muitas tentativas falhas. Por favor, redefina sua senha ou aguarde."
-				);
-				break;
+		try {
+			console.log("🔵 2. Chamando Firebase signInWithEmailAndPassword...");
+			const userCredential = await signInWithEmailAndPassword(
+				auth,
+				email,
+				password
+			);
 
-			default:
-				Alert.alert("Erro ao fazer login", "Ocorreu um problema inesperado.");
-				break;
+			console.log("🔵 3. Login bem-sucedido!");
+			console.log("🔵    User UID:", userCredential.user.uid);
+			console.log("🔵    User Email:", userCredential.user.email);
+
+			console.log("🔵 4. Tentando navegar para /(app)...");
+			router.replace("/(app)");
+
+			console.log("🔵 5. Comando router.replace executado!");
+			console.log("====================================");
+		} catch (error: any) {
+			console.log("====================================");
+			console.log("🔴 ERRO no login!");
+			console.log("🔴 Código:", error.code);
+			console.log("🔴 Mensagem:", error.message);
+			console.log("====================================");
+
+			switch (error.code) {
+				case "auth/user-not-found":
+					Alert.alert(
+						"Usuário não encontrado",
+						"Parece que você ainda não tem uma conta. Vamos criar uma!",
+						[
+							{text: "Agora não", style: "cancel"},
+							{
+								text: "Cadastro",
+								onPress: () => router.push("/(auth)/register"),
+							},
+						]
+					);
+					break;
+
+				case "auth/invalid-credential":
+				case "auth/wrong-password":
+					setEmailError("E-mail ou senha incorretos.");
+					setPasswordError(" ");
+					break;
+
+				case "auth/too-many-requests":
+					Alert.alert(
+						"Acesso Bloqueado Temporariamente",
+						"Muitas tentativas falhas. Por favor, redefina sua senha ou aguarde."
+					);
+					break;
+
+				default:
+					Alert.alert("Erro ao fazer login", "Ocorreu um problema inesperado.");
+					break;
+			}
+		} finally {
+			setIsLoading(false);
 		}
-	}
-};
+	};
 
-	const handleSendResetEmail = () => {
+	const handleOpenResetModal = () => {
+		setResetEmail(email); // Pré-preenche com o e-mail do login
+		setIsModalVisible(true);
+	};
+
+	const handleSendResetEmail = async () => {
+		console.log("🔐 handleSendResetEmail chamado!");
+
 		if (!resetEmail || !/\S+@\S+\.\S+/.test(resetEmail)) {
 			Alert.alert("E-mail Inválido", "Por favor, insira um e-mail válido.");
 			return;
 		}
-		sendPasswordResetEmail(auth, resetEmail)
-			.then(() => {
-				setIsModalVisible(false);
-				setResetEmail("");
-				Alert.alert(
-					"Verifique seu E-mail",
-					`Um link para redefinir sua senha foi enviado para ${resetEmail}.`
-				);
-			})
-			.catch(() => {
-				Alert.alert(
-					"Erro",
-					"Não foi possível enviar o e-mail. Verifique se o e-mail está correto."
-				);
-			});
+
+		setIsSendingReset(true);
+
+		try {
+			console.log("📧 Enviando e-mail de recuperação para:", resetEmail);
+			await sendPasswordResetEmail(auth, resetEmail);
+			console.log("✅ E-mail enviado com sucesso!");
+
+			setIsModalVisible(false);
+			setResetEmail("");
+
+			Alert.alert(
+				"✅ E-mail Enviado!",
+				`Um link para redefinir sua senha foi enviado para ${resetEmail}.\n\nVerifique sua caixa de entrada e siga as instruções.`
+			);
+		} catch (error: any) {
+			console.error("❌ Erro ao enviar e-mail:", error);
+
+			let errorMessage =
+				"Não foi possível enviar o e-mail. Verifique se o e-mail está correto.";
+
+			if (error.code === "auth/user-not-found") {
+				errorMessage = "Não existe uma conta com este e-mail.";
+			} else if (error.code === "auth/invalid-email") {
+				errorMessage = "E-mail inválido.";
+			} else if (error.code === "auth/too-many-requests") {
+				errorMessage = "Muitas tentativas. Tente novamente em alguns minutos.";
+			}
+
+			Alert.alert("❌ Erro", errorMessage);
+		} finally {
+			setIsSendingReset(false);
+		}
 	};
 
 	return (
 		<View style={styles.container}>
-			{/* Modal de Redefinir Senha */}
+			{/* Modal de Redefinir Senha - MELHORADO */}
 			<Modal
 				animationType="slide"
 				transparent={true}
 				visible={isModalVisible}
-				onRequestClose={() => setIsModalVisible(false)}
+				onRequestClose={() => !isSendingReset && setIsModalVisible(false)}
 			>
-				<View style={styles.modalOverlay}>
+				<KeyboardAvoidingView
+					behavior={Platform.OS === "ios" ? "padding" : undefined}
+					style={styles.modalOverlay}
+				>
 					<View style={styles.modalContainer}>
-						<Text style={styles.modalTitle}>Redefinir Senha</Text>
-						<TextInput
-							style={styles.modalInput}
-							placeholder="Digite seu e-mail"
-							value={resetEmail}
-							onChangeText={setResetEmail}
-							keyboardType="email-address"
-						/>
+						{/* Ícone */}
+						<View style={styles.modalIconContainer}>
+							<Ionicons name="key-outline" size={48} color="#1E4369" />
+						</View>
+
+						{/* Título */}
+						<Text style={styles.modalTitle}>Recuperar Senha</Text>
+						<Text style={styles.modalSubtitle}>
+							Informe seu e-mail e enviaremos instruções para redefinir sua
+							senha.
+						</Text>
+
+						{/* Input */}
+						<View style={styles.modalInputWrapper}>
+							<Ionicons
+								name="mail-outline"
+								size={20}
+								color="#757575"
+								style={styles.modalInputIcon}
+							/>
+							<TextInput
+								style={styles.modalInput}
+								placeholder="Digite seu e-mail"
+								value={resetEmail}
+								onChangeText={setResetEmail}
+								keyboardType="email-address"
+								autoCapitalize="none"
+								autoCorrect={false}
+								editable={!isSendingReset}
+								placeholderTextColor="#999"
+							/>
+						</View>
+
+						{/* Botões */}
 						<View style={styles.modalButtonContainer}>
 							<TouchableOpacity
 								style={[styles.modalButton, styles.cancelButton]}
 								onPress={() => setIsModalVisible(false)}
+								disabled={isSendingReset}
 							>
 								<Text style={styles.cancelButtonText}>Cancelar</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
-								style={[styles.modalButton, styles.sendButton]}
+								style={[
+									styles.modalButton,
+									styles.sendButton,
+									isSendingReset && styles.sendButtonDisabled,
+								]}
 								onPress={handleSendResetEmail}
+								disabled={isSendingReset}
 							>
-								<Text style={styles.sendButtonText}>Enviar</Text>
+								{isSendingReset ? (
+									<ActivityIndicator color="#FFFFFF" size="small" />
+								) : (
+									<>
+										<Ionicons name="send" size={18} color="#FFFFFF" />
+										<Text style={styles.sendButtonText}>Enviar</Text>
+									</>
+								)}
 							</TouchableOpacity>
 						</View>
 					</View>
-				</View>
+				</KeyboardAvoidingView>
 			</Modal>
 
 			<View style={styles.card}>
@@ -195,8 +276,11 @@ export default function LoginScreen() {
 						onChangeText={setEmail}
 						autoCapitalize="none"
 						keyboardType="email-address"
+						editable={!isLoading}
 					/>
-					{emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
+					{emailError ? (
+						<Text style={styles.errorText}>{emailError}</Text>
+					) : null}
 
 					<View style={styles.inputContainer}>
 						<TextInput
@@ -205,10 +289,12 @@ export default function LoginScreen() {
 							value={password}
 							onChangeText={setPassword}
 							secureTextEntry={!isPasswordVisible}
+							editable={!isLoading}
 						/>
 						<Pressable
 							onPress={() => setIsPasswordVisible(!isPasswordVisible)}
 							style={styles.icon}
+							disabled={isLoading}
 						>
 							<Ionicons
 								name={isPasswordVisible ? "eye-off" : "eye"}
@@ -223,17 +309,29 @@ export default function LoginScreen() {
 
 					<TouchableOpacity
 						style={styles.linkButton}
-						onPress={() => setIsModalVisible(true)}
+						onPress={handleOpenResetModal}
+						disabled={isLoading}
 					>
 						<Text style={styles.linkText}>Esqueceu sua senha?</Text>
 					</TouchableOpacity>
 
-					<TouchableOpacity style={styles.button} onPress={handleLogin}>
-						<Text style={styles.buttonText}>ENTRAR</Text>
+					<TouchableOpacity
+						style={[styles.button, isLoading && styles.buttonDisabled]}
+						onPress={handleLogin}
+						disabled={isLoading}
+					>
+						{isLoading ? (
+							<ActivityIndicator color="#FFFFFF" size="small" />
+						) : (
+							<Text style={styles.buttonText}>ENTRAR</Text>
+						)}
 					</TouchableOpacity>
 
 					<Link href="/(auth)/register" asChild>
-						<TouchableOpacity style={styles.registerButton}>
+						<TouchableOpacity
+							style={styles.registerButton}
+							disabled={isLoading}
+						>
 							<Text style={styles.registerText}>
 								Não tem uma conta?{" "}
 								<Text style={styles.registerHighlight}>Cadastre-se agora</Text>
@@ -315,9 +413,9 @@ const styles = StyleSheet.create({
 		height: 50,
 		elevation: 1,
 	},
-	inputField: { flex: 1 },
-	icon: { padding: 5 },
-	errorText: { color: "red", marginTop: 4, fontSize: 12 },
+	inputField: {flex: 1},
+	icon: {padding: 5},
+	errorText: {color: "red", marginTop: 4, fontSize: 12},
 	button: {
 		backgroundColor: "#1E4369",
 		padding: 16,
@@ -325,12 +423,17 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		marginTop: 20,
 	},
-	buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-	linkButton: { marginTop: 12 },
-	linkText: { color: "#1E4369", textAlign: "center", fontSize: 14 },
-	registerButton: { marginTop: 20 },
-	registerText: { color: "#555", textAlign: "center" },
-	registerHighlight: { color: "#1E4369", fontWeight: "bold" },
+	buttonDisabled: {
+		backgroundColor: "#B0B0B0",
+	},
+	buttonText: {color: "#fff", fontSize: 16, fontWeight: "bold"},
+	linkButton: {marginTop: 12},
+	linkText: {color: "#1E4369", textAlign: "center", fontSize: 14},
+	registerButton: {marginTop: 20},
+	registerText: {color: "#555", textAlign: "center"},
+	registerHighlight: {color: "#1E4369", fontWeight: "bold"},
+
+	// ✅ ESTILOS DO MODAL MELHORADOS
 	modalOverlay: {
 		flex: 1,
 		justifyContent: "center",
@@ -338,35 +441,90 @@ const styles = StyleSheet.create({
 		backgroundColor: "rgba(0,0,0,0.5)",
 	},
 	modalContainer: {
-		width: "85%",
+		width: "90%",
+		maxWidth: 400,
 		backgroundColor: "#fff",
-		borderRadius: 16,
-		padding: 20,
+		borderRadius: 20,
+		padding: 24,
 		alignItems: "center",
+		elevation: 8,
 	},
-	modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 15 },
-	modalInput: {
+	modalIconContainer: {
+		width: 80,
+		height: 80,
+		borderRadius: 40,
+		backgroundColor: "#E3F2FD",
+		justifyContent: "center",
+		alignItems: "center",
+		marginBottom: 16,
+	},
+	modalTitle: {
+		fontSize: 22,
+		fontWeight: "bold",
+		color: "#212121",
+		marginBottom: 8,
+	},
+	modalSubtitle: {
+		fontSize: 14,
+		color: "#757575",
+		textAlign: "center",
+		marginBottom: 24,
+		lineHeight: 20,
+	},
+	modalInputWrapper: {
+		flexDirection: "row",
+		alignItems: "center",
 		width: "100%",
-		height: 45,
-		borderColor: "#ccc",
+		backgroundColor: "#F5F5F5",
+		borderRadius: 12,
+		paddingHorizontal: 16,
+		marginBottom: 20,
 		borderWidth: 1,
-		borderRadius: 10,
-		paddingHorizontal: 10,
-		marginBottom: 15,
+		borderColor: "#E0E0E0",
+	},
+	modalInputIcon: {
+		marginRight: 12,
+	},
+	modalInput: {
+		flex: 1,
+		height: 50,
+		fontSize: 16,
+		color: "#212121",
 	},
 	modalButtonContainer: {
 		flexDirection: "row",
 		width: "100%",
-		justifyContent: "space-between",
+		gap: 12,
 	},
 	modalButton: {
 		flex: 1,
-		padding: 12,
-		borderRadius: 50,
+		flexDirection: "row",
+		padding: 14,
+		borderRadius: 12,
 		alignItems: "center",
+		justifyContent: "center",
+		gap: 8,
 	},
-	cancelButton: { backgroundColor: "#f0f0f0", marginRight: 10 },
-	cancelButtonText: { color: "#333", fontWeight: "bold" },
-	sendButton: { backgroundColor: "#1E4369", marginLeft: 10 },
-	sendButtonText: { color: "#fff", fontWeight: "bold" },
+	cancelButton: {
+		backgroundColor: "#F5F5F5",
+		borderWidth: 1,
+		borderColor: "#E0E0E0",
+	},
+	cancelButtonText: {
+		color: "#757575",
+		fontWeight: "600",
+		fontSize: 15,
+	},
+	sendButton: {
+		backgroundColor: "#4CAF50",
+		elevation: 2,
+	},
+	sendButtonDisabled: {
+		backgroundColor: "#B0B0B0",
+	},
+	sendButtonText: {
+		color: "#fff",
+		fontWeight: "600",
+		fontSize: 15,
+	},
 });

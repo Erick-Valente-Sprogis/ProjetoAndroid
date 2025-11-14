@@ -1,7 +1,6 @@
 // frontend/app/(app)/index.tsx - Dashboard com Modal de Opções
 
 import {Ionicons} from "@expo/vector-icons";
-import {BarCodeScanner} from "expo-barcode-scanner";
 import * as ImagePicker from "expo-image-picker";
 import React, {useCallback, useEffect, useState} from "react";
 import {
@@ -50,11 +49,6 @@ export default function DashboardScreen() {
 	const [editingNota, setEditingNota] = useState<NotaFiscal | null>(null);
 	const [isEditing, setIsEditing] = useState(false);
 
-	// Scanner
-	const [scannerVisible, setScannerVisible] = useState(false);
-	const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-	const [scanned, setScanned] = useState(false);
-
 	// Formulário
 	const [chaveAcesso, setChaveAcesso] = useState("");
 	const [numeroNf, setNumeroNf] = useState("");
@@ -88,13 +82,6 @@ export default function DashboardScreen() {
 		0
 	);
 
-	useEffect(() => {
-		(async () => {
-			const {status} = await BarCodeScanner.requestPermissionsAsync();
-			setHasPermission(status === "granted");
-		})();
-	}, []);
-
 	const fetchNotas = useCallback(async () => {
 		if (!user) return;
 		setLoading(true);
@@ -127,42 +114,6 @@ export default function DashboardScreen() {
 			fetchNotas();
 		}
 	}, [user, fetchNotas]);
-
-	const handleBarCodeScanned = ({data}: {type: string; data: string}) => {
-		setScanned(true);
-		setScannerVisible(false);
-
-		const chaveMatch = data.match(/\d{44}/);
-		if (chaveMatch) {
-			setChaveAcesso(chaveMatch[0]);
-			Alert.alert("✓ QR Code Lido", "Chave de acesso extraída com sucesso!", [
-				{text: "Continuar", onPress: () => setAddModalVisible(true)},
-			]);
-		} else {
-			Alert.alert(
-				"Atenção",
-				"Não foi possível extrair a chave. Digite manualmente.",
-				[{text: "OK", onPress: () => setAddModalVisible(true)}]
-			);
-		}
-	};
-
-	const openScanner = () => {
-		setOptionsModalVisible(false);
-		if (hasPermission === null) {
-			Alert.alert("Aguarde", "Verificando permissões...");
-			return;
-		}
-		if (hasPermission === false) {
-			Alert.alert(
-				"Permissão Negada",
-				"Habilite o acesso à câmera nas configurações do dispositivo."
-			);
-			return;
-		}
-		setScanned(false);
-		setScannerVisible(true);
-	};
 
 	const takePhoto = async () => {
 		setOptionsModalVisible(false);
@@ -459,13 +410,12 @@ export default function DashboardScreen() {
 	const handleDeleteNota = async (nota: NotaFiscal) => {
 		if (!user) return;
 
-		// Confirmação antes de deletar
 		const confirmacao =
 			Platform.OS === "web"
 				? window.confirm(
 						`Tem certeza que deseja deletar a nota NF ${nota.numero_nf}?\n\nEsta ação não pode ser desfeita!`
 				  )
-				: false; // Para mobile, vamos usar Alert.alert
+				: false;
 
 		if (Platform.OS !== "web") {
 			Alert.alert(
@@ -497,14 +447,14 @@ export default function DashboardScreen() {
 
 		async function executarDelete() {
 			console.log("🗑️ 1. Iniciando deleção da nota:", nota.id);
-			setDetailsVisible(false); // Fecha o modal de detalhes
+			setDetailsVisible(false);
 
 			try {
 				console.log("🗑️ 2. Buscando token...");
 				const token = await user.getIdToken();
 
 				console.log("🗑️ 3. Fazendo DELETE...");
-				const response = await api.delete(`/notas/${nota.id}`, {
+				await api.delete(`/notas/${nota.id}`, {
 					headers: {Authorization: `Bearer ${token}`},
 				});
 
@@ -516,7 +466,6 @@ export default function DashboardScreen() {
 					Alert.alert("✅ Sucesso!", "Nota fiscal deletada com sucesso!");
 				}
 
-				// Atualiza a lista
 				fetchNotas();
 			} catch (error: any) {
 				console.error("❌ Erro ao deletar nota:", error.message);
@@ -555,7 +504,9 @@ export default function DashboardScreen() {
 		setValorTotal(nota.valor_total.toString().replace(".", ","));
 
 		if (nota.foto_url) {
-			setNotaFoto(`${api.defaults.baseURL}/uploads/${nota.foto_url}`);
+			setNotaFoto(
+				`${api.defaults.baseURL.replace("/api", "")}/uploads/${nota.foto_url}`
+			);
 		} else {
 			setNotaFoto(null);
 		}
@@ -602,38 +553,6 @@ export default function DashboardScreen() {
 			</View>
 		</TouchableOpacity>
 	);
-
-	if (scannerVisible) {
-		return (
-			<View style={styles.scannerContainer}>
-				<StatusBar barStyle="light-content" backgroundColor="#000" />
-				<BarCodeScanner
-					onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-					style={StyleSheet.absoluteFillObject}
-				/>
-				<View style={styles.scannerOverlay}>
-					<View style={styles.scannerHeader}>
-						<Text style={styles.scannerTitle}>Escaneie o QR Code</Text>
-						<Text style={styles.scannerSubtitle}>
-							Posicione o QR Code da nota fiscal dentro do quadrado
-						</Text>
-					</View>
-					<View style={styles.scannerFrame}>
-						<View style={[styles.corner, styles.cornerTL]} />
-						<View style={[styles.corner, styles.cornerTR]} />
-						<View style={[styles.corner, styles.cornerBL]} />
-						<View style={[styles.corner, styles.cornerBR]} />
-					</View>
-					<TouchableOpacity
-						style={styles.scannerCloseButton}
-						onPress={() => setScannerVisible(false)}
-					>
-						<Text style={styles.scannerCloseText}>FECHAR</Text>
-					</TouchableOpacity>
-				</View>
-			</View>
-		);
-	}
 
 	return (
 		<View style={styles.container}>
@@ -721,19 +640,6 @@ export default function DashboardScreen() {
 								<Ionicons name="close" size={24} color="#757575" />
 							</TouchableOpacity>
 						</View>
-
-						<TouchableOpacity style={styles.optionButton} onPress={openScanner}>
-							<View style={styles.optionIconCircle}>
-								<Ionicons name="qr-code-outline" size={28} color="#1E4369" />
-							</View>
-							<View style={styles.optionTextContainer}>
-								<Text style={styles.optionTitle}>Escanear QR Code</Text>
-								<Text style={styles.optionSubtitle}>
-									Extrair chave automaticamente
-								</Text>
-							</View>
-							<Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
-						</TouchableOpacity>
 
 						<TouchableOpacity style={styles.optionButton} onPress={takePhoto}>
 							<View style={styles.optionIconCircle}>
@@ -1013,7 +919,7 @@ export default function DashboardScreen() {
 				</View>
 			</Modal>
 
-			{/* ✅ Modal de Edição - AGORA NO LUGAR CERTO! */}
+			{/* Modal de Edição */}
 			<Modal
 				animationType="slide"
 				transparent={true}
@@ -1343,78 +1249,6 @@ const styles = StyleSheet.create({
 		shadowOffset: {width: 0, height: 4},
 		shadowOpacity: 0.3,
 		shadowRadius: 8,
-	},
-	scannerContainer: {
-		flex: 1,
-		backgroundColor: "#000",
-	},
-	scannerOverlay: {
-		flex: 1,
-		backgroundColor: "rgba(0, 0, 0, 0.6)",
-		justifyContent: "space-between",
-		padding: 40,
-	},
-	scannerHeader: {
-		alignItems: "center",
-	},
-	scannerTitle: {
-		fontSize: 24,
-		fontWeight: "bold",
-		color: "#FFF",
-		marginBottom: 12,
-	},
-	scannerSubtitle: {
-		fontSize: 15,
-		color: "rgba(255, 255, 255, 0.9)",
-		textAlign: "center",
-		lineHeight: 22,
-	},
-	scannerFrame: {
-		width: 260,
-		height: 260,
-		alignSelf: "center",
-		position: "relative",
-	},
-	corner: {
-		position: "absolute",
-		width: 40,
-		height: 40,
-		borderColor: "#FFF",
-	},
-	cornerTL: {
-		top: 0,
-		left: 0,
-		borderTopWidth: 4,
-		borderLeftWidth: 4,
-	},
-	cornerTR: {
-		top: 0,
-		right: 0,
-		borderTopWidth: 4,
-		borderRightWidth: 4,
-	},
-	cornerBL: {
-		bottom: 0,
-		left: 0,
-		borderBottomWidth: 4,
-		borderLeftWidth: 4,
-	},
-	cornerBR: {
-		bottom: 0,
-		right: 0,
-		borderBottomWidth: 4,
-		borderRightWidth: 4,
-	},
-	scannerCloseButton: {
-		backgroundColor: "#F44336",
-		paddingVertical: 14,
-		borderRadius: 8,
-		alignItems: "center",
-	},
-	scannerCloseText: {
-		color: "#FFF",
-		fontSize: 16,
-		fontWeight: "600",
 	},
 	modalBackdrop: {
 		flex: 1,

@@ -4,6 +4,7 @@ import path from "path";
 import express, {Request, Response} from "express";
 import authRoutes from "./routes/authRoutes";
 import notaFiscalRoutes from "./routes/notaFiscalRoutes";
+import adminRoutes from "./routes/adminRoutes";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.get("/api/health", (req: Request, res: Response) => {
 // ✅ Registro das Rotas Principais COM /api
 app.use("/api/auth", authRoutes);
 app.use("/api/notas", notaFiscalRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.listen(PORT, () => {
 	console.log(`🚀 Servidor rodando na porta ${PORT}`);

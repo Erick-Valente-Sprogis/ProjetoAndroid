@@ -1,7 +1,7 @@
-// Em: frontend/app/(app)/_layout.tsx
+// frontend/app/(app)/_layout.tsx
 
 import React from "react";
-import {Tabs} from "expo-router"; // 1. Importe o <Tabs> do Expo Router
+import {Tabs} from "expo-router";
 import {Ionicons} from "@expo/vector-icons";
 import {useAuth} from "../../context/AuthContext";
 
@@ -10,27 +10,24 @@ export default function AppLayout() {
 	const isAdmin = profile?.role === "admin";
 
 	return (
-		// 2. Use o <Tabs> em vez do <Tab.Navigator>
 		<Tabs
 			screenOptions={({route}) => ({
 				headerShown: false,
 				tabBarIcon: ({focused, color, size}) => {
-					let iconName: any; // O 'any' é mantido para consistência com o seu código
+					let iconName: any;
 
 					if (route.name === "index") {
-						// 'dashboard' vira 'index'
-						iconName = focused ? "home" : "home-outline";
-					} else if (route.name === "notas") {
-						iconName = focused ? "documents" : "documents-outline";
+						iconName = focused ? "document-text" : "document-text-outline";
 					} else if (route.name === "perfil") {
 						iconName = focused ? "person" : "person-outline";
 					} else if (route.name === "admin") {
-						iconName = focused ? "shield" : "shield-outline";
+						iconName = focused
+							? "shield-checkmark"
+							: "shield-checkmark-outline";
 					}
 
 					return <Ionicons name={iconName} size={size} color={color} />;
 				},
-				// 3. Estilos são aplicados aqui
 				tabBarActiveTintColor: "#1E4369",
 				tabBarInactiveTintColor: "#8E8E93",
 				tabBarStyle: {
@@ -52,31 +49,26 @@ export default function AppLayout() {
 				},
 			})}
 		>
-			{/* 4. Os <Tab.Screen> viram <Tabs.Screen> */}
+			{/* Tela Principal - Dashboard de Notas Fiscais */}
 			<Tabs.Screen
-				name="index" // O arquivo 'index.tsx' é a tela principal
-				options={{
-					tabBarLabel: "Início",
-				}}
-			/>
-			<Tabs.Screen
-				name="notas" // O arquivo 'notas.tsx'
+				name="index"
 				options={{
 					tabBarLabel: "Notas",
 				}}
 			/>
 
-			{/* 5. A tela de Admin é escondida se o 'href' for 'null' */}
+			{/* Tela de Admin - Só aparece para administradores */}
 			<Tabs.Screen
-				name="admin" // O arquivo 'admin.tsx'
+				name="admin"
 				options={{
 					tabBarLabel: "Admin",
-					href: isAdmin ? "/admin" : null, // Esconde a aba se não for admin
+					href: isAdmin ? "/admin" : null,
 				}}
 			/>
 
+			{/* Tela de Perfil */}
 			<Tabs.Screen
-				name="perfil" // O arquivo 'perfil.tsx'
+				name="perfil"
 				options={{
 					tabBarLabel: "Perfil",
 				}}

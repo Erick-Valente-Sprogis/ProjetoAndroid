@@ -13,7 +13,7 @@ type UserProfile = {
 	fullName: string;
 	role: "user" | "admin";
 	phone?: string;
-	photoUrl?: string;
+	photoURL?: string;
 	isBlocked?: boolean;
 };
 
