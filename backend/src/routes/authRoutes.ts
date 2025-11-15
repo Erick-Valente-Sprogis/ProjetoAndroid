@@ -42,7 +42,9 @@ router.get("/health", (req, res) => {
 router.put("/profile", authMiddleware, async (req, res) => {
 	try {
 		const uid = req.user?.uid;
-		const {phone} = req.body;
+		const {phone, fullName} = req.body; // ✅ ADICIONE fullName AQUI
+
+		console.log("📝 Dados recebidos:", {uid, phone, fullName}); // ✅ LOG
 
 		if (!uid) {
 			return res.status(401).json({message: "Não autenticado"});
@@ -57,12 +59,30 @@ router.put("/profile", authMiddleware, async (req, res) => {
 			return res.status(404).json({message: "Usuário não encontrado"});
 		}
 
-		// Atualiza APENAS phone (photoURL é atualizado via upload)
+		// ✅ Verifica se o usuário é admin para permitir editar fullName
+		const podeMudarNome = userAtual.role === "admin";
+
+		console.log("👑 É admin?", podeMudarNome); // ✅ LOG
+
+		// Monta o objeto de atualização
+		const updateData: any = {};
+
+		if (phone !== undefined) {
+			updateData.phone = phone;
+		}
+
+		// ✅ ADMIN pode atualizar fullName
+		if (fullName !== undefined && podeMudarNome) {
+			updateData.fullName = fullName;
+			console.log("✅ Nome será atualizado para:", fullName); // ✅ LOG
+		}
+
+		console.log("📦 Update data:", updateData); // ✅ LOG
+
+		// Atualiza o perfil
 		const userAtualizado = await prisma.user.update({
 			where: {uid},
-			data: {
-				...(phone !== undefined && {phone}),
-			},
+			data: updateData,
 			select: {
 				id: true,
 				uid: true,
@@ -76,10 +96,10 @@ router.put("/profile", authMiddleware, async (req, res) => {
 			},
 		});
 
-		console.log(`✅ Perfil atualizado: ${uid}`);
+		console.log(`✅ Perfil atualizado:`, userAtualizado); // ✅ LOG
 		res.status(200).json(userAtualizado);
 	} catch (error) {
-		console.error("Erro ao atualizar perfil:", error);
+		console.error("❌ Erro ao atualizar perfil:", error);
 		res.status(500).json({message: "Erro ao atualizar perfil"});
 	}
 });

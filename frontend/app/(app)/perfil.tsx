@@ -30,6 +30,7 @@ export default function PerfilScreen() {
 
 	// Modal de edição
 	const [editModalVisible, setEditModalVisible] = useState(false);
+	const [editFullName, setEditFullName] = useState(profile?.fullName || ""); // ✅ NOVO
 	const [editPhone, setEditPhone] = useState(profile?.phone || "");
 	const [editPhoto, setEditPhoto] = useState<string | null>(null);
 	const [isSaving, setIsSaving] = useState(false);
@@ -70,6 +71,7 @@ export default function PerfilScreen() {
 	};
 
 	const openEditModal = () => {
+		setEditFullName(profile?.fullName || ""); // ✅ NOVO
 		setEditPhone(profile?.phone || "");
 		setEditPhoto(null);
 		setEditModalVisible(true);
@@ -136,18 +138,25 @@ export default function PerfilScreen() {
 		try {
 			const token = await user.getIdToken();
 
-			// 1. Atualiza o telefone (se foi modificado)
-			if (editPhone !== profile?.phone) {
-				console.log("📞 Atualizando telefone:", editPhone);
-				await api.put(
-					"/auth/profile",
-					{phone: editPhone},
-					{headers: {Authorization: `Bearer ${token}`}}
-				);
-				console.log("✅ Telefone atualizado!");
+			// ✅ 1. Monta o objeto de atualização
+			const updateData: any = {
+				phone: editPhone,
+			};
+
+			// ✅ ADMIN pode atualizar o nome completo
+			if (profile?.role === "admin") {
+				updateData.fullName = editFullName;
+				console.log("👑 ADMIN - Atualizando nome completo:", editFullName);
 			}
 
-			// 2. Faz upload da foto (se uma nova foto foi selecionada)
+			// 2. Atualiza os dados básicos (telefone e, se admin, nome)
+			console.log("📝 Atualizando dados:", updateData);
+			await api.put("/auth/profile", updateData, {
+				headers: {Authorization: `Bearer ${token}`},
+			});
+			console.log("✅ Dados atualizados!");
+
+			// 3. Faz upload da foto (se uma nova foto foi selecionada)
 			console.log("📸 editPhoto:", editPhoto);
 			if (
 				editPhoto &&
@@ -203,19 +212,19 @@ export default function PerfilScreen() {
 				console.log("⚠️ Nenhuma nova foto selecionada");
 			}
 
-			// 3. Fecha o modal ANTES de atualizar (evita problemas de state)
+			// 4. Fecha o modal ANTES de atualizar (evita problemas de state)
 			setEditModalVisible(false);
 			setIsSaving(false);
 
-			// 4. Atualiza o perfil no contexto (vai forçar re-render)
+			// 5. Atualiza o perfil no contexto (vai forçar re-render)
 			console.log("🔄 Atualizando perfil no contexto...");
 			await refreshProfile();
 			console.log("✅ Perfil atualizado no contexto!");
 
-			// 5. Pequeno delay para garantir que o estado atualizou
+			// 6. Pequeno delay para garantir que o estado atualizou
 			await new Promise((resolve) => setTimeout(resolve, 200));
 
-			// 6. Mostra mensagem de sucesso
+			// 7. Mostra mensagem de sucesso
 			if (Platform.OS === "web") {
 				window.alert("✅ Perfil atualizado com sucesso!");
 			} else {
@@ -427,17 +436,31 @@ export default function PerfilScreen() {
 								/>
 							</View>
 
-							{/* Nome (somente leitura) */}
+							{/* ✅ Nome Completo - Editável apenas para ADMIN */}
 							<View style={styles.inputWrapper}>
-								<Text style={styles.inputLabel}>Nome (não editável)</Text>
+								<Text style={styles.inputLabel}>
+									Nome Completo
+									{profile?.role !== "admin" && " (não editável)"}
+								</Text>
 								<TextInput
-									style={[styles.input, styles.inputDisabled]}
-									value={profile?.fullName}
-									editable={false}
+									style={[
+										styles.input,
+										profile?.role !== "admin" && styles.inputDisabled,
+									]}
+									value={editFullName}
+									onChangeText={setEditFullName}
+									placeholder="Seu nome completo"
+									editable={profile?.role === "admin"}
+									placeholderTextColor="#999"
 								/>
+								{profile?.role !== "admin" && (
+									<Text style={styles.inputHint}>
+										Apenas administradores podem alterar o nome
+									</Text>
+								)}
 							</View>
 
-							{/* Telefone (editável) */}
+							{/* Telefone (editável para todos) */}
 							<View style={styles.inputWrapper}>
 								<Text style={styles.inputLabel}>Telefone</Text>
 								<TextInput
@@ -744,6 +767,12 @@ const styles = StyleSheet.create({
 	inputDisabled: {
 		backgroundColor: "#E0E0E0",
 		color: "#757575",
+	},
+	inputHint: {
+		fontSize: 11,
+		color: "#999",
+		marginTop: 4,
+		fontStyle: "italic",
 	},
 	modalActions: {
 		flexDirection: "row",

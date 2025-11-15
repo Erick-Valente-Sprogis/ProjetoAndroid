@@ -26,6 +26,7 @@ if (!admin.apps.length) {
 	}
 }
 
+// ✅ REMOVA A INTERFACE AuthRequest EXPORTADA
 // Declaração para o TypeScript entender o 'req.user'
 declare global {
 	namespace Express {
@@ -65,7 +66,7 @@ export const authMiddleware = async (
 	}
 };
 
-// --- FERRAMENTA 2 (O Segurança Admin - A QUE ESTÁ FALTANDO) ---
+// --- FERRAMENTA 2 (O Segurança Admin) ---
 export const adminMiddleware = async (
 	req: Request,
 	res: Response,
@@ -90,7 +91,7 @@ export const adminMiddleware = async (
 				.send({message: "Acesso negado. Requer permissão de administrador."});
 		}
 
-		next(); // Usuário é admin! Pode passar.
+		next();
 	} catch (error) {
 		return res
 			.status(500)
