@@ -10,7 +10,9 @@ A solução compartilhada neste repositório consiste no desenvolvimento de uma 
 
 ## 👥 Equipe do Projeto
 
-- **RA XXXXXX** - Erick Valente Sprogis
+- **202403521581** - Carlos Miguel Marques Biudes
+- **202403871751** - Erick Valente Sprogis
+- **202204396874** - Giovanna Antunes Baptista
 
 ---
 
