@@ -1,342 +1,670 @@
-# Gerenciador de Notas Fiscais
+# 📱 Gerenciador de Notas Fiscais
 
-Este é um aplicativo full-stack completo para gerenciamento de notas fiscais pessoais. Ele permite que os usuários se cadastrem, façam login, e realizem operações de CRUD (Criar, Ler, Atualizar, Deletar) em suas notas fiscais, com a opção de anexar fotos de comprovantes.
+Projeto da disciplina de Programação de Dispositivos Móveis com React Native + Expo (Android)
 
-O projeto inclui um painel de administração robusto onde administradores podem gerenciar usuários, redefinir senhas e bloquear/desbloquear contas.
+**Orientador:** Prof. Luiz Gustavo Turatti
 
-A autenticação é centralizada usando Firebase Authentication, e os dados do aplicativo (perfis de usuário, informações das notas) são armazenados em um banco de dados SQLite gerenciado pelo Prisma. O backend também lida com o armazenamento de arquivos de imagem (fotos de perfil e notas) no servidor.
-
----
-
-## 📋 Índice
-
-- [✨ Funcionalidades](#-funcionalidades)
-  - [Usuário Comum](#usuário-comum)
-  - [Administrador](#administrador)
-- [💻 Tecnologias Utilizadas](#-tecnologias-utilizadas)
-  - [Backend](#backend)
-  - [Frontend](#frontend)
-- [📁 Estrutura do Projeto](#-estrutura-do-projeto)
-- [🚀 Como Executar](#-como-executar)
-  - [Pré-requisitos](#pré-requisitos)
-  - [Configuração do Backend](#configuração-do-backend)
-  - [Configuração do Frontend](#configuração-do-frontend)
-  - [Criando um Administrador](#criando-um-administrador)
-- [🔑 Endpoints da API](#-endpoints-da-api)
+A solução compartilhada neste repositório consiste no desenvolvimento de uma plataforma mobile para gerenciamento e organização de notas fiscais eletrônicas. O aplicativo permite aos usuários cadastrar, visualizar, editar e excluir notas fiscais através de múltiplos métodos de entrada: leitura de QR Code (chave de acesso de 44 dígitos), captura por câmera, seleção de galeria e entrada manual de dados. O sistema implementa autenticação segura via Firebase, armazenamento local com SQLite/Prisma, e interface moderna seguindo os padrões do Material Design 3.
 
 ---
 
-## ✨ Funcionalidades
+## 👥 Equipe do Projeto
 
-O sistema é dividido em dois níveis de acesso: **Usuário Comum** e **Administrador**.
-
-### Usuário Comum
-
-#### Autenticação:
-
-- Cadastro de nova conta (Nome, Email, Senha, Telefone).
-- Login com e-mail e senha.
-- Fluxo de "Esqueci minha senha" com redefinição por e-mail (via Firebase).
-
-#### Dashboard (Notas Fiscais):
-
-- Visualização em lista de todas as notas fiscais cadastradas pelo usuário.
-- Exibição de estatísticas: Total de notas, Valor total gasto e Valor gasto no mês atual.
-- Atualização da lista com "Puxar para atualizar" (Pull-to-refresh).
-
-#### Gerenciamento de Notas Fiscais (CRUD):
-
-**Adicionar Nota:**
-
-- Opção de adicionar tirando uma foto com a câmera.
-- Opção de adicionar escolhendo uma foto da galeria.
-- Opção de preencher manualmente sem foto.
-- Formulário com validação para: Chave de Acesso (44 dígitos), Número da NF, Emitente, Data de Emissão e Valor Total.
-
-**Visualizar Nota:** Modal com todos os detalhes da nota fiscal selecionada.
-
-**Editar Nota:** Permite a atualização de todos os campos da nota, incluindo a substituição da foto.
-
-**Deletar Nota:** Remove a nota fiscal do banco de dados e exclui o arquivo de imagem associado do servidor.
-
-#### Gerenciamento de Perfil:
-
-- Visualização dos dados do perfil (Foto, Nome, Email, Telefone).
-- Atualização do número de telefone.
-- Upload/Alteração da foto de perfil (usando câmera ou galeria).
-- Logout do aplicativo.
-
-### Administrador
-
-Administradores possuem todas as funcionalidades de um usuário comum, além de:
-
-#### Painel de Administração:
-
-- Visualização de estatísticas: Total de usuários, Total de administradores e Total de usuários bloqueados.
-- Lista de todos os usuários cadastrados no sistema.
-- Campo de busca para filtrar usuários por nome ou e-mail.
-
-#### Gerenciamento de Usuários:
-
-- **Bloquear/Desbloquear Usuário:** Um usuário bloqueado não pode mais fazer login. A ação é sincronizada com o Firebase (define `disabled: true`) e com o banco de dados local (`isBlocked: true`).
-- **Alterar Senha:** O administrador pode definir uma nova senha para qualquer usuário diretamente pelo painel.
-
-#### Gerenciamento de Perfil:
-
-- Diferente de usuários comuns, um Administrador pode alterar o seu próprio "Nome Completo" (`fullName`) através da tela de "Editar Perfil".
+- **RA XXXXXX** - Erick Valente Sprogis
 
 ---
 
-## 💻 Tecnologias Utilizadas
+## 📑 Sumário
 
-Este projeto é um monorepo (ou estrutura similar) dividido em frontend e backend.
+1. [Requisitos](#-requisitos)
+2. [Configuração de Acesso aos Dados](#-configuração-de-acesso-aos-dados)
+3. [Estrutura do Projeto](#-estrutura-do-projeto)
+4. [Instalação dos Requisitos](#-instalação-dos-requisitos)
+5. [Configuração do Firebase](#-configuração-do-firebase)
+6. [Executando o Projeto](#-executando-o-projeto)
+7. [Funcionalidades Principais](#-funcionalidades-principais)
+8. [Telas do Projeto](#-telas-do-projeto)
+9. [Tecnologias Utilizadas](#-tecnologias-utilizadas)
 
-### Backend
+---
 
-- **Core:** Node.js, Express, TypeScript
-- **Banco de Dados:** Prisma (ORM) com SQLite como driver.
-- **Autenticação:** Firebase Admin SDK para criação de usuários e gerenciamento (troca de senha, bloqueio).
-- **Validação de Rota:** Middlewares customizados para verificar autenticação (`authMiddleware`) e permissões de administrador (`adminMiddleware`).
-- **File Uploads:** `multer` para processar `multipart/form-data`, usado para upload de fotos de perfil e de notas fiscais.
-- **Servir Arquivos:** `express.static` é usado para servir as imagens da pasta `uploads` publicamente.
+## 🔧 Requisitos
 
-### Frontend
+### Ambiente de Desenvolvimento:
 
-- **Core:** React 19, React Native, Expo (SDK 53).
-- **Roteamento:** Expo Router (roteamento baseado em arquivos).
-- **Autenticação:** Firebase Client SDK (v12) para login, registro e recuperação de senha.
-- **Gerenciamento de Estado (Auth):** React Context (`AuthContext`) para prover o status do usuário e perfil para toda a aplicação.
-- **Comunicação API:** `axios` com interceptors configurados para logging de requisições.
-- **Módulos Nativos:**
-  - `expo-image-picker`: Para acessar a câmera e a galeria de fotos.
-  - `expo-splash-screen`: Para manter a tela de splash visível enquanto a autenticação é verificada.
-  - `expo-constants`: Para acessar variáveis de ambiente do `app.json`.
-- **UI & Ícones:** `@expo/vector-icons`.
-- **Persistência (Auth):**
-  - **Web:** `browserLocalPersistence`.
-  - **Mobile:** `getReactNativePersistence(AsyncStorage)`.
+- **Node.js LTS** versão 20.x ou superior
+- **npm** versão 10.x ou superior
+- **Expo CLI** versão 51.x
+- **React Native** versão 0.74.x
+- **TypeScript** versão 5.3.x
+
+### Aplicativo Mobile:
+
+- **Expo Go** ([Google Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent) / [Apple App Store](https://apps.apple.com/app/expo-go/id982107779))
+
+### Banco de Dados:
+
+- **SQLite** (banco de dados local)
+- **Prisma ORM** versão 5.x
+
+### Serviços Externos:
+
+- **Firebase Authentication** (autenticação de usuários)
+- **Firebase Admin SDK** (gerenciamento backend)
+
+---
+
+## 🗄️ Estrutura do Banco de Dados
+
+### 📊 Tabela `User`:
+
+```prisma
+model User {
+  id         String   @id @default(uuid())
+  uid        String   @unique
+  email      String   @unique
+  fullName   String
+  phone      String?
+  photoURL   String?
+  role       String   @default("user")
+  isBlocked  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  notasFiscais NotaFiscal[]
+}
+```
+
+**Campos:**
+
+- `id`: UUID (chave primária)
+- `uid`: String (UID do Firebase - único)
+- `email`: String (e-mail do usuário - único)
+- `fullName`: String (nome completo)
+- `phone`: String (telefone - opcional)
+- `photoURL`: String (URL da foto de perfil - opcional)
+- `role`: String (função: "user" ou "admin")
+- `isBlocked`: Boolean (status de bloqueio)
+- `createdAt`: DateTime (data de criação)
+
+---
+
+### 📋 Tabela `NotaFiscal`:
+
+```prisma
+model NotaFiscal {
+  id             String   @id @default(uuid())
+  chave_acesso   String   @unique
+  numero_nf      String
+  emitente_nome  String
+  emitente_cnpj  String?
+  data_emissao   DateTime
+  valor_total    Float
+  foto_url       String?
+  criado_em      DateTime @default(now())
+  criado_por     User     @relation(fields: [criado_por_uid], references: [uid])
+  criado_por_uid String
+}
+```
+
+**Campos:**
+
+- `id`: UUID (chave primária)
+- `chave_acesso`: String (chave de acesso de 44 dígitos - única)
+- `numero_nf`: String (número da nota fiscal)
+- `emitente_nome`: String (nome do emitente)
+- `emitente_cnpj`: String (CNPJ do emitente - opcional)
+- `data_emissao`: DateTime (data de emissão)
+- `valor_total`: Float (valor total da nota)
+- `foto_url`: String (caminho da foto - opcional)
+- `criado_em`: DateTime (data de criação)
+- `criado_por_uid`: String (UID do criador - foreign key)
+
+---
+
+## 🔐 Configuração de Acesso aos Dados
+
+### Backend (`backend/.env`):
+
+```env
+DATABASE_URL="file:./dev.db"
+PORT=3000
+NODE_ENV=development
+```
+
+### Firebase Configuration:
+
+O projeto utiliza Firebase para autenticação. Você precisará:
+
+1. **Service Account Key** (`backend/serviceAccountKey.json`):
+
+```json
+{
+	"type": "service_account",
+	"project_id": "seu-projeto-firebase",
+	"private_key_id": "...",
+	"private_key": "...",
+	"client_email": "...",
+	"client_id": "...",
+	"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+	"token_uri": "https://oauth2.googleapis.com/token",
+	"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+	"client_x509_cert_url": "..."
+}
+```
+
+2. **Firebase Config** (`frontend/firebaseConfig.ts`):
+
+```typescript
+export const firebaseConfig = {
+	apiKey: "AIza...",
+	authDomain: "seu-projeto.firebaseapp.com",
+	projectId: "seu-projeto-firebase",
+	storageBucket: "seu-projeto.appspot.com",
+	messagingSenderId: "123456789",
+	appId: "1:123456789:web:abc123...",
+};
+```
 
 ---
 
 ## 📁 Estrutura do Projeto
 
-A estrutura de arquivos principal do projeto é organizada da seguinte forma:
-
 ```
-/
+ProjetoAndroid/
 ├── backend/
-│   ├── uploads/                  # (Criado dinamicamente) Armazena fotos
-│   │   ├── profiles/
-│   │   └── temp/
+│   ├── prisma/
+│   │   └── schema.prisma
 │   ├── src/
+│   │   ├── config/
+│   │   │   └── firebase.ts
 │   │   ├── controllers/
-│   │   │   ├── adminController.ts      # Lógica para rotas de admin
-│   │   │   ├── authController.ts       # Lógica para registro e perfil
-│   │   │   └── notaFiscalController.ts # Lógica para CRUD de notas
+│   │   │   ├── authController.ts
+│   │   │   └── notaFiscalController.ts
 │   │   ├── middlewares/
-│   │   │   ├── adminMiddleware.ts      # Verifica se o usuário é admin
-│   │   │   └── authMiddleware.ts       # Verifica o token Firebase
+│   │   │   └── authMiddleware.ts
 │   │   ├── routes/
-│   │   │   ├── adminRoutes.ts          # Rotas de /api/admin
-│   │   │   ├── authRoutes.ts           # Rotas de /api/auth
-│   │   │   └── notaFiscalRoutes.ts     # Rotas de /api/notas
-│   │   ├── prisma/
-│   │   │   └── schema.prisma         # Definição dos models (User, NotaFiscal)
-│   │   ├── index.ts                  # Ponto de entrada do servidor Express
-│   │   └── prisma.ts                 # Instância global do PrismaClient
-│   └── serviceAccountKey.json      # Credenciais do Firebase Admin (Exige criação manual)
+│   │   │   ├── authRoutes.ts
+│   │   │   └── notaFiscalRoutes.ts
+│   │   ├── prisma.ts
+│   │   └── index.ts
+│   ├── uploads/
+│   │   └── profiles/
+│   ├── .env
+│   ├── serviceAccountKey.json
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── README.md
 │
-└── frontend/
-    ├── app/
-    │   ├── (app)/                    # Rotas protegidas (autenticadas)
-    │   │   ├── _layout.tsx           # Layout de tabs
-    │   │   ├── index.tsx             # Tela do Dashboard (Lista de Notas)
-    │   │   ├── admin.tsx             # Tela de Gerenciamento de Admin
-    │   │   └── perfil.tsx            # Tela de Perfil do Usuário
-    │   ├── (auth)/                   # Rotas públicas (autenticação)
-    │   │   ├── _layout.tsx           # Layout de stack
-    │   │   ├── login.tsx             # Tela de Login
-    │   │   ├── register.tsx          # Tela de Registro
-    │   │   └── forgot-password.tsx   # Tela de Recuperar Senha
-    │   └── _layout.tsx               # Layout Raiz (controla o fluxo Auth/App)
-    ├── context/
-    │   └── AuthContext.tsx           # Provedor de Autenticação Global
-    ├── src/services/
-    │   └── api.ts                    # Instância configurada do Axios
-    ├── firebaseConfig.ts             # Configuração do Firebase (cliente)
-    ├── app.json                      # Configuração do projeto Expo
-    └── package.json                  # Dependências do Frontend
+├── frontend/
+│   ├── app/
+│   │   ├── (app)/
+│   │   │   ├── index.tsx
+│   │   │   ├── perfil.tsx
+│   │   │   ├── admin.tsx
+│   │   │   └── _layout.tsx
+│   │   ├── (auth)/
+│   │   │   ├── login.tsx
+│   │   │   ├── register.tsx
+│   │   │   └── _layout.tsx
+│   │   └── _layout.tsx
+│   ├── assets/
+│   │   └── images/
+│   ├── context/
+│   │   └── AuthContext.tsx
+│   ├── src/
+│   │   ├── components/
+│   │   └── services/
+│   │       └── api.ts
+│   ├── firebaseConfig.ts
+│   ├── app.json
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── README.md
+│
+├── documentacao/
+│   └── documentacao.md
+│
+├── video/
+│   └── demonstracao.mp4
+│
+└── README.md
 ```
 
 ---
 
-## 🚀 Como Executar
+## 📦 Instalação dos Requisitos
 
-### Pré-requisitos
+### Windows 11:
 
-- Node.js (LTS)
-- NPM ou Yarn
-- Conta no Firebase (para autenticação e credenciais de Admin)
-- Expo CLI (instalado globalmente ou via `npx`)
-- Um dispositivo (Android/iOS) ou emulador/simulador
+**1. Instale o Chocolatey** (gerenciador de pacotes):
 
-### Configuração do Backend
+Abra o PowerShell como **Administrador** e execute:
 
-1. **Navegue até a pasta do backend:**
+```powershell
+Set-ExecutionPolicy AllSigned
+
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+choco --version
+```
+
+**2. Instale os requisitos:**
+
+```powershell
+choco install nodejs-lts -y
+choco install openjdk17 -y
+```
+
+**3. Verifique as instalações:**
+
+```powershell
+node --version
+npm --version
+java -version
+```
+
+---
+
+### Linux/macOS:
+
+**1. Instale o Node.js:**
+
+```bash
+# Ubuntu/Debian
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# macOS (Homebrew)
+brew install node@20
+```
+
+**2. Verifique a instalação:**
+
+```bash
+node --version
+npm --version
+```
+
+---
+
+## 🔥 Configuração do Firebase
+
+### 1. Crie um Projeto no Firebase:
+
+1. Acesse [Firebase Console](https://console.firebase.google.com/)
+2. Clique em "Adicionar projeto"
+3. Siga as instruções para criar o projeto
+
+### 2. Ative a Autenticação:
+
+1. No menu lateral, vá em **Authentication**
+2. Clique em "Começar"
+3. Ative o método **E-mail/Senha**
+
+### 3. Obtenha as Credenciais:
+
+**Para o Frontend:**
+
+1. Vá em **Configurações do Projeto** (ícone de engrenagem)
+2. Role até "Seus aplicativos"
+3. Clique em "Web" (`</>`)
+4. Copie as configurações e cole em `frontend/firebaseConfig.ts`
+
+**Para o Backend:**
+
+1. Vá em **Configurações do Projeto** → **Contas de serviço**
+2. Clique em "Gerar nova chave privada"
+3. Salve o arquivo como `backend/serviceAccountKey.json`
+
+### 4. Crie um Usuário Admin:
+
+Após executar o projeto pela primeira vez, cadastre um usuário e execute no backend:
 
 ```bash
 cd backend
+npx ts-node -e "
+import {PrismaClient} from '@prisma/client';
+const prisma = new PrismaClient();
+async function run() {
+  await prisma.user.update({
+    where: {email: 'seu-email@exemplo.com'},
+    data: {role: 'admin'}
+  });
+  console.log('✅ Usuário promovido a admin!');
+  process.exit(0);
+}
+run();
+"
 ```
 
-2. **Instale as dependências:**
+---
+
+## 🚀 Executando o Projeto
+
+### 1. Clone o Repositório:
 
 ```bash
+git clone https://github.com/seu-usuario/gerenciador-notas-fiscais.git
+cd gerenciador-notas-fiscais
+```
+
+---
+
+### 2. Configure o Backend:
+
+```bash
+cd backend
+
+# Instale as dependências
 npm install
-```
 
-3. **Crie sua Chave de Admin do Firebase:**
+# Configure o arquivo .env
+cp .env.example .env
 
-   - Vá ao seu [console do Firebase](https://console.firebase.google.com) > Configurações do Projeto > Contas de Serviço.
-   - Gere uma nova chave privada.
-   - Renomeie o arquivo `.json` baixado para `serviceAccountKey.json` e coloque-o na raiz da pasta `backend/`.
+# Adicione o serviceAccountKey.json do Firebase
+# (baixado conforme instruções acima)
 
-4. **Configure o Banco de Dados:**
+# Execute as migrations do Prisma
+npx prisma migrate dev
 
-   O projeto usa SQLite. Crie um arquivo `.env` na raiz do `backend/` e adicione a string de conexão:
-
-```env
-DATABASE_URL="file:./dev.db"
-PORT=3000
-```
-
-5. **Execute a migração do Prisma para criar o banco de dados e as tabelas:**
-
-```bash
-npx prisma migrate dev --name init
-```
-
-6. **Inicie o servidor backend:**
-
-```bash
+# Inicie o servidor
 npm run dev
 ```
 
-O servidor estará rodando em `http://localhost:3000`.
+O backend estará disponível em: `http://localhost:3000`
 
-### Configuração do Frontend
+---
 
-1. **Navegue até a pasta do frontend:**
+### 3. Configure o Frontend:
 
 ```bash
 cd frontend
-```
 
-2. **Instale as dependências:**
-
-```bash
+# Instale as dependências
 npm install
+
+# Configure o Firebase
+# Edite o arquivo firebaseConfig.ts com suas credenciais
+
+# Inicie o Expo
+npx expo start
 ```
 
-3. **Configure o Firebase Client:**
+---
 
-   - Abra o arquivo `frontend/firebaseConfig.ts`.
-   - Substitua o objeto `firebaseConfig` pelas credenciais do seu projeto Firebase (Web).
+### 4. Execute no Dispositivo:
 
-4. **Configure o Endereço da API:**
+**Opção A - Expo Go (Desenvolvimento):**
 
-   - Abra o arquivo `frontend/src/services/api.ts`.
-   - Altere o `baseURL` para o endereço IP da sua máquina onde o backend está rodando.
+1. Instale o **Expo Go** no seu celular
+2. Escaneie o QR Code exibido no terminal
+3. O app será carregado no dispositivo
 
-   **Exemplos:**
+**Opção B - Navegador Web:**
 
-   - Uso geral: `baseURL: "http://192.168.1.10:3000/api"`
-   - Emulador Android: `http://10.0.2.2:3000/api`
-   - Simulador iOS ou Web: `http://localhost:3000/api`
+1. Pressione `w` no terminal do Expo
+2. O app abrirá no navegador em `http://localhost:8081`
 
-5. **Inicie o aplicativo Expo:**
+**Opção C - Emulador Android:**
+
+1. Instale o Android Studio
+2. Configure um emulador
+3. Pressione `a` no terminal do Expo
+
+---
+
+## ✨ Funcionalidades Principais
+
+### 🔐 Autenticação:
+
+- ✅ Cadastro de novos usuários
+- ✅ Login com e-mail e senha
+- ✅ Recuperação de senha
+- ✅ Perfis diferenciados (Usuário e Administrador)
+
+### 📋 Gerenciamento de Notas Fiscais:
+
+- ✅ **Leitura de QR Code** (chave de acesso de 44 dígitos)
+- ✅ **Captura por Câmera** (foto da nota fiscal)
+- ✅ **Seleção da Galeria** (importar imagem existente)
+- ✅ **Entrada Manual** (digitação de dados)
+- ✅ Visualização detalhada com preview de imagem
+- ✅ Edição de notas cadastradas
+- ✅ Exclusão de notas
+
+### 👤 Perfil do Usuário:
+
+- ✅ Visualização de informações
+- ✅ Edição de foto de perfil
+- ✅ Edição de telefone (todos os usuários)
+- ✅ Edição de nome completo (apenas administradores)
+
+### 👑 Painel Administrativo:
+
+- ✅ Listagem de todos os usuários
+- ✅ Bloqueio/desbloqueio de usuários
+- ✅ Alteração de perfis (usuário ↔ admin)
+- ✅ Visualização de estatísticas
+
+### 🎨 Interface:
+
+- ✅ Material Design 3
+- ✅ Navegação por abas inferiores
+- ✅ Floating Action Button para criar notas
+- ✅ Tema em #1E4369 (azul escuro)
+- ✅ Componentes com elevação e ripple effects
+
+---
+
+## 📱 Telas do Projeto
+
+### Tela 1: **Login**
+
+![Login](./video/tela-login.png)
+
+- Campo de e-mail
+- Campo de senha
+- Botão "Entrar"
+- Link para cadastro
+- Link para recuperação de senha
+
+---
+
+### Tela 2: **Cadastro**
+
+![Cadastro](./video/tela-cadastro.png)
+
+- Nome completo
+- E-mail
+- Telefone
+- Senha
+- Confirmação de senha
+- Botão "Cadastrar"
+
+---
+
+### Tela 3: **Dashboard (Notas Fiscais)**
+
+![Dashboard](./video/tela-dashboard.png)
+
+- Lista de todas as notas fiscais
+- Cards com informações resumidas:
+  - Emitente
+  - Número da NF
+  - Valor total
+  - Data de emissão
+- Floating Action Button (+) para adicionar nova nota
+- Pesquisa e filtros
+
+---
+
+### Tela 4: **Criar Nota Fiscal**
+
+![Criar Nota](./video/tela-criar-nota.png)
+
+- Opções de entrada:
+  - 📷 **Escanear QR Code**
+  - 📸 **Tirar Foto**
+  - 🖼️ **Escolher da Galeria**
+  - ✏️ **Entrada Manual**
+- Preview da foto selecionada
+- Formulário de dados:
+  - Chave de acesso (44 dígitos)
+  - Número da NF
+  - Nome do emitente
+  - Data de emissão
+  - Valor total
+- Botões: Cancelar / Salvar
+
+---
+
+### Tela 5: **Detalhes da Nota Fiscal**
+
+![Detalhes](./video/tela-detalhes-nota.png)
+
+- Imagem da nota (se disponível)
+- Informações completas:
+  - Chave de acesso
+  - Número da NF
+  - Emitente
+  - Data de emissão
+  - Valor total
+  - Data de cadastro
+  - Cadastrado por
+- Botões: Editar / Excluir
+
+---
+
+### Tela 6: **Perfil do Usuário**
+
+![Perfil](./video/tela-perfil.png)
+
+- Foto de perfil (editável)
+- Nome completo (editável apenas para admin)
+- E-mail (não editável)
+- Telefone (editável)
+- Tipo de conta (usuário/administrador)
+- Badge de administrador (se aplicável)
+- Botão "Editar Perfil"
+- Botão "Sair"
+
+---
+
+### Tela 7: **Editar Perfil**
+
+![Editar Perfil](./video/tela-editar-perfil.png)
+
+- Preview da foto
+- Botões: Câmera / Galeria
+- Campo e-mail (somente leitura)
+- Campo nome (editável para admin)
+- Campo telefone (editável para todos)
+- Botões: Cancelar / Salvar
+
+---
+
+### Tela 8: **Painel Admin**
+
+![Admin](./video/tela-admin.png)
+
+- Lista de todos os usuários
+- Cards com:
+  - Foto de perfil
+  - Nome
+  - E-mail
+  - Tipo de conta
+  - Status (ativo/bloqueado)
+- Ações:
+  - Bloquear/Desbloquear usuário
+  - Tornar admin/usuário comum
+- Estatísticas do sistema
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+### Backend:
+
+- **Node.js** - Runtime JavaScript
+- **TypeScript** - Superset tipado do JavaScript
+- **Express** - Framework web
+- **Prisma ORM** - Object-Relational Mapping
+- **SQLite** - Banco de dados
+- **Firebase Admin SDK** - Autenticação e gerenciamento
+- **Multer** - Upload de arquivos
+
+### Frontend:
+
+- **React Native** - Framework mobile
+- **Expo** - Plataforma de desenvolvimento
+- **Expo Router** - Navegação file-based
+- **TypeScript** - Tipagem estática
+- **Firebase Auth** - Autenticação de usuários
+- **AsyncStorage** - Persistência local
+- **expo-barcode-scanner** - Leitura de QR Code
+- **expo-image-picker** - Seleção/captura de imagens
+
+### Design:
+
+- **Material Design 3** - Sistema de design
+- **@expo/vector-icons** - Ícones
+- **React Native Paper** (conceitos) - Componentes Material
+
+---
+
+## 📝 Scripts Disponíveis
+
+### Backend:
 
 ```bash
-npm start
+npm run dev       # Inicia o servidor em modo desenvolvimento
+npm run build     # Compila TypeScript para JavaScript
+npm start         # Inicia o servidor compilado
+npx prisma studio # Abre interface visual do banco de dados
+npx prisma migrate dev # Cria nova migration
 ```
 
-ou
+### Frontend:
 
 ```bash
-expo start
+npx expo start           # Inicia o Expo
+npx expo start --clear   # Inicia limpando cache
+npx expo start --web     # Abre no navegador
+npx expo start --android # Abre no Android
+eas build --platform android # Build de produção
 ```
 
-Escaneie o QR code com o app **Expo Go** no seu dispositivo, ou pressione:
+---
 
-- `a` para Emulador Android
-- `i` para Simulador iOS
-- `w` para Web
+## 🐛 Troubleshooting
 
-### Criando um Administrador
+### Problema: "Firebase not initialized"
 
-Por padrão, novos usuários são criados com a role `"user"`. Para criar um admin:
+**Solução:** Verifique se o `firebaseConfig.ts` está configurado corretamente.
 
-1. Cadastre um novo usuário normalmente pelo aplicativo.
-2. Abra o banco de dados `backend/dev.db` (usando um visualizador de SQLite, como o "SQLite" para VS Code).
-3. Encontre o usuário na tabela `User`.
-4. Mude o valor da coluna `role` de `"user"` para `"admin"`.
-5. Faça login novamente no aplicativo com esse usuário para ver o painel de administração.
+### Problema: "Cannot connect to backend"
+
+**Solução:**
+
+1. Verifique se o backend está rodando em `localhost:3000`
+2. Confirme que o `api.ts` aponta para o IP correto
+3. Se estiver em dispositivo físico, use o IP da máquina (não localhost)
+
+### Problema: Câmera/Galeria não funciona
+
+**Solução:**
+
+1. Conceda permissões no dispositivo
+2. No Android, verifique as permissões em `app.json`
 
 ---
 
-## 🔑 Endpoints da API
+## 📄 Licença
 
-O backend expõe os seguintes endpoints, todos prefixados com `/api`.
-
-### Autenticação (`/api/auth`)
-
-| Método | Endpoint         | Descrição                                                                                      | Requer Auth |
-| ------ | ---------------- | ---------------------------------------------------------------------------------------------- | ----------- |
-| `POST` | `/register`      | Cria um novo usuário no Firebase e no banco de dados local.                                    | ❌          |
-| `GET`  | `/me`            | Retorna o perfil completo do usuário logado.                                                   | ✅          |
-| `PUT`  | `/profile`       | Atualiza o telefone do usuário. Se o usuário for admin, permite também atualizar o `fullName`. | ✅          |
-| `POST` | `/profile/photo` | Faz upload de uma nova foto de perfil (`multipart/form-data`).                                 | ✅          |
-
-### Notas Fiscais (`/api/notas`)
-
-| Método   | Endpoint | Descrição                                                                        | Requer Auth |
-| -------- | -------- | -------------------------------------------------------------------------------- | ----------- |
-| `GET`    | `/`      | Lista todas as notas fiscais do usuário autenticado.                             | ✅          |
-| `POST`   | `/`      | Cria uma nova nota fiscal. Espera `multipart/form-data` se uma foto for enviada. | ✅          |
-| `PUT`    | `/:id`   | Atualiza uma nota fiscal existente pelo ID.                                      | ✅          |
-| `DELETE` | `/:id`   | Deleta uma nota fiscal pelo ID.                                                  | ✅          |
-
-### Administração (`/api/admin`)
-
-| Método | Endpoint              | Descrição                                  | Requer Auth | Requer Admin |
-| ------ | --------------------- | ------------------------------------------ | ----------- | ------------ |
-| `GET`  | `/users`              | Lista todos os usuários do sistema.        | ✅          | ✅           |
-| `PUT`  | `/users/:id/password` | Define uma nova senha para um usuário.     | ✅          | ✅           |
-| `PUT`  | `/users/:id/block`    | Bloqueia um usuário (no Firebase e no DB). | ✅          | ✅           |
-| `PUT`  | `/users/:id/unblock`  | Desbloqueia um usuário.                    | ✅          | ✅           |
-
-### Outros
-
-| Método | Endpoint      | Descrição                                           | Requer Auth |
-| ------ | ------------- | --------------------------------------------------- | ----------- |
-| `GET`  | `/uploads/*`  | Serve arquivos estáticos (fotos de perfil e notas). | ❌          |
-| `GET`  | `/api/health` | Rota pública para verificar se a API está online.   | ❌          |
+Este projeto foi desenvolvido para fins acadêmicos.
 
 ---
 
-## 📝 Licença
+## 📞 Suporte
 
-Este projeto é de código aberto e está disponível sob a licença MIT.
-
----
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull requests.
-
----
-
-## 📧 Contato
-
-Para dúvidas ou sugestões, entre em contato através do email ou abra uma issue no repositório.
-
----
+Para dúvidas ou problemas, entre em contato através do e-mail ou abra uma issue no repositório.
